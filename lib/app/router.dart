@@ -1,11 +1,9 @@
-import 'package:bloomie/features/home/presentation/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:bloomie/features/splash/presentation/screens/splash_screen.dart';
 import 'package:bloomie/features/habits/presentation/screens/habit_screen.dart';
 import 'package:bloomie/features/settings/presentation/screens/settings_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
 import 'package:bloomie/features/duo_mode/presentation/screens/duo_mode_screen.dart';
 import 'package:bloomie/features/garden/presentation/screens/garden_screen.dart';
 import 'package:bloomie/features/profile/presentation/screens/profile_screen.dart';
@@ -82,10 +80,9 @@ class AppRouter {
         ),
 
         // Main App Navigation
-        GoRoute(path: '/', builder: (context, state) => const DuoModeScreen()),
+        GoRoute(path: '/duo_mode', builder: (context, state) => const DuoModeScreen()),
 
-        GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-        GoRoute(path: '/habits', builder: (context, state) => const HabitScreen()),
+        GoRoute(path: '/', builder: (context, state) => const HabitScreen()),
 
         GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
         GoRoute(path: '/garden', builder: (context, state) => const GardenScreen()),

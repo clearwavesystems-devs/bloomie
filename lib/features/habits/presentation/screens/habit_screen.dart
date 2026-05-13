@@ -257,10 +257,17 @@ class _BottomNav extends StatelessWidget {
         color: AppColors.creamBg.withOpacity(0.95),
         border: Border(top: BorderSide(color: AppColors.primaryPink.withOpacity(0.1))),
       ),
+
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _NavItem(icon: Icons.home_rounded, label: 'Home', isSelected: true, onTap: () => context.go('/home')),
+          _NavItem(icon: Icons.dashboard_rounded, label: 'Home', isSelected: false, onTap: () => context.go('/home')),
+          _NavItem(
+            icon: Icons.check_circle_rounded,
+            label: 'Habits',
+            isSelected: true,
+            onTap: () => context.go('/habits'),
+          ),
           _NavItem(icon: Icons.favorite_rounded, label: 'Duo', isSelected: false, onTap: () => context.go('/duo')),
           _NavItem(
             icon: Icons.add_circle_rounded,
