@@ -4,8 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 
-class DuoScreen extends StatelessWidget {
+class DuoScreen extends StatefulWidget {
   const DuoScreen({super.key});
+
+  @override
+  State<DuoScreen> createState() => _DuoScreenState();
+}
+
+class _DuoScreenState extends State<DuoScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<DuoCubit>().loadDuoData();
+  }
 
   @override
   Widget build(BuildContext context) {

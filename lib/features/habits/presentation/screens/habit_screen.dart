@@ -1,6 +1,10 @@
+import 'package:bloomie/features/habits/presentation/widgets/bobbing_bunny.dart';
+import 'package:bloomie/features/habits/presentation/widgets/floating_petals.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../cubit/habits_cubit.dart';
 import '../../cubit/habits_state.dart';
 import '../../../duo/cubit/duo_cubit.dart';
@@ -8,12 +12,7 @@ import '../../../duo/cubit/duo_state.dart';
 import '../../../garden/cubit/garden_cubit.dart';
 import '../../../garden/cubit/garden_state.dart';
 import '../../../profile/cubit/profile_cubit.dart';
-import '../widgets/garden_scene.dart';
 import '../widgets/habit_card.dart';
-import '../widgets/progress_ring.dart';
-import '../../../duo/presentation/widgets/partner_badge.dart';
-import '../widgets/falling_petals.dart';
-import 'package:go_router/go_router.dart';
 
 class HabitScreen extends StatefulWidget {
   const HabitScreen({super.key});
@@ -35,18 +34,40 @@ class _HabitScreenState extends State<HabitScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(child: _HeroSection()),
-              SliverToBoxAdapter(child: _ProgressCard()),
-              SliverToBoxAdapter(child: _HabitListHeader()),
-              _HabitList(),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
+      backgroundColor: const Color(0xFFFFF8F5),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _HeroSection()),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+              child: _ProgressCard(),
+            ),
           ),
-          Positioned(bottom: 0, left: 0, right: 0, child: _BottomNav()),
+          SliverToBoxAdapter(
+            child: _SectionHeader(
+              title: "Daily Habits",
+              actionText: "see all",
+              onAction: () => context.push('/habits'),
+            ),
+          ),
+          _HabitList(),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+              child: _AddHabitButton(),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: _SectionHeader(title: "Garden Growth", onAction: () {}),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+              child: _WeeklyReportCard(),
+            ),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 100.h)),
         ],
       ),
     );
@@ -57,65 +78,128 @@ class _HeroSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 380.h,
+      width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: AppColors.heroGradient,
+          colors: [Color(0xFFFDDBE8), Color(0xFFFFF0F5)],
         ),
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(32), bottomRight: Radius.circular(32)),
       ),
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
       child: Stack(
         children: [
-          const Positioned.fill(child: FallingPetals()),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
+          // Petals Animation
+          Positioned.fill(
+            child: FloatingPetals(containerWidth: 1.sw, containerHeight: 380.h),
+          ),
+
+          SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '🌸 Bloomie',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.displayLarge?.copyWith(fontSize: 28, color: AppColors.primaryPink),
-                    ),
-                    const Icon(Icons.settings_outlined, color: AppColors.textDark),
-                  ],
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '🌸 Bloomie',
+                        style: GoogleFonts.baloo2(
+                          fontSize: 28.sp,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFE896B0),
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.all(8.w),
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.5), shape: BoxShape.circle),
+                        child: Icon(Icons.notifications_outlined, color: const Color(0xFFE896B0), size: 24.sp),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _StatPill(icon: '🔥', label: '12 streak'),
-                    const SizedBox(width: 8),
-                    _StatPill(icon: '🌸', label: '680 blooms'),
-                  ],
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w),
+                  child: Row(
+                    children: [
+                      _StatPill(icon: '🔥', label: '12 streak'),
+                      SizedBox(width: 8.w),
+                      _StatPill(icon: '🌸', label: '680 blooms'),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                BlocBuilder<DuoCubit, DuoState>(
-                  builder: (context, state) {
-                    if (state is DuoLoaded && state.partner != null) {
-                      return PartnerBadge(partnerName: state.partner!.name, statusText: 'watered 2h ago');
-                    }
-                    return const SizedBox.shrink();
-                  },
+                SizedBox(height: 12.h),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w),
+                  child: _PartnerStatusBadge(),
                 ),
-                const SizedBox(height: 20),
-                BlocBuilder<GardenCubit, GardenState>(
-                  builder: (context, state) {
-                    if (state is GardenLoaded) {
-                      return GardenScene(
-                        plantEmoji: state.currentPlant.emoji,
-                        plantName: state.currentPlant.name,
-                        growth: state.currentPlant.growthPercent,
-                      );
-                    }
-                    return const GardenScene(plantEmoji: '🌹', plantName: 'Our Rose', growth: 0.5);
-                  },
+                const Spacer(),
+                // Garden Ground
+                Container(
+                  height: 60.h,
+                  margin: EdgeInsets.symmetric(horizontal: 20.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2B8CC).withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
                 ),
               ],
+            ),
+          ),
+
+          // Bunnies and Plant
+          Positioned(
+            bottom: 30.h,
+            left: 0,
+            right: 0,
+            child: BlocBuilder<GardenCubit, GardenState>(
+              builder: (context, state) {
+                String plantEmoji = '🌹';
+                String plantName = 'Our Rose';
+                if (state is GardenLoaded) {
+                  plantEmoji = state.currentPlant.emoji;
+                  plantName = state.currentPlant.name;
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const BobbingBunny(
+                      bodyColor: Colors.white,
+                      earColor: Color(0xFFFDDBE8),
+                      cheekColor: Color(0xFFFFC8DC),
+                      size: 70,
+                    ),
+                    SizedBox(width: 20.w),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(plantEmoji, style: TextStyle(fontSize: 40.sp)),
+                        SizedBox(height: 5.h),
+                        Text(
+                          plantName,
+                          style: GoogleFonts.nunito(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFFC07AD0),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(width: 20.w),
+                    const BobbingBunny(
+                      bodyColor: Color(0xFFF2E8FF),
+                      earColor: Color(0xFFE8D4FF),
+                      cheekColor: Color(0xFFD4BFFF),
+                      size: 70,
+                      mirrorX: true,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -133,7 +217,7 @@ class _StatPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.6),
         borderRadius: BorderRadius.circular(20),
@@ -141,8 +225,49 @@ class _StatPill extends StatelessWidget {
       ),
       child: Text(
         '$icon $label',
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textDark),
+        style: GoogleFonts.nunito(fontSize: 11.sp, fontWeight: FontWeight.w800, color: const Color(0xFF3A2030)),
       ),
+    );
+  }
+}
+
+class _PartnerStatusBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<DuoCubit, DuoState>(
+      builder: (context, state) {
+        String message = 'Waiting for partner...';
+        bool isOnline = false;
+
+        if (state is DuoLoaded && state.partner != null) {
+          isOnline = true; // Simplified for UI demo
+          message = '${state.partner!.name} is online · 4/5 habits done';
+        }
+
+        return Container(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE896B0).withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8.w,
+                height: 8.w,
+                decoration: BoxDecoration(color: isOnline ? Colors.green : Colors.grey, shape: BoxShape.circle),
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                message,
+                style: GoogleFonts.nunito(fontSize: 12.sp, fontWeight: FontWeight.w700, color: const Color(0xFF3A2030)),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -150,73 +275,104 @@ class _StatPill extends StatelessWidget {
 class _ProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryPink, AppColors.lavender],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(color: AppColors.primaryPink.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
-        ],
-      ),
-      child: BlocBuilder<HabitsCubit, HabitsState>(
-        builder: (context, state) {
-          double percent = 0.0;
-          int done = 0;
-          int total = 0;
+    return BlocBuilder<HabitsCubit, HabitsState>(
+      builder: (context, state) {
+        double progress = 0.0;
+        int completed = 0;
+        int total = 0;
 
-          if (state is HabitsLoaded) {
-            total = state.habits.length;
-            done = state.habits.where((h) => h.currentCount >= h.targetCount).length;
-            percent = total > 0 ? done / total : 0.0;
-          }
+        if (state is HabitsLoaded) {
+          total = state.habits.length;
+          completed = state.habits.where((h) => h.currentCount >= h.targetCount).length;
+          progress = total > 0 ? completed / total : 0.0;
+        }
 
-          return Row(
+        return Container(
+          padding: EdgeInsets.all(20.w),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE896B0), Color(0xFFC07AD0)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(color: const Color(0xFFE896B0).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
+            ],
+          ),
+          child: Row(
             children: [
-              ProgressRing(percent: percent, label: 'bloomed'),
-              const SizedBox(width: 16),
+              SizedBox(
+                width: 70.w,
+                height: 70.w,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 8,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      valueColor: const AlwaysStoppedAnimation(Colors.white),
+                      strokeCap: StrokeCap.round,
+                    ),
+                    Text(
+                      '${(progress * 100).toInt()}%',
+                      style: GoogleFonts.baloo2(fontSize: 16.sp, fontWeight: FontWeight.w800, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 20.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Blooming together! 💑',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                    Text(
+                      'Great job, duo!',
+                      style: GoogleFonts.baloo2(fontSize: 18.sp, fontWeight: FontWeight.w800, color: Colors.white),
                     ),
                     Text(
-                      'You $done/$total · Mira 4/5',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.8)),
+                      'You\'ve completed $completed out of $total habits today.',
+                      style: GoogleFonts.nunito(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
 
-class _HabitListHeader extends StatelessWidget {
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String actionText;
+  final VoidCallback onAction;
+
+  const _SectionHeader({required this.title, this.actionText = "See all", required this.onAction});
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Your Habits', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            title,
+            style: GoogleFonts.baloo2(fontSize: 20.sp, fontWeight: FontWeight.w800, color: const Color(0xFF3A2030)),
+          ),
           TextButton(
-            onPressed: () {},
-            child: const Text(
-              '+ Add',
-              style: TextStyle(color: AppColors.lavender, fontWeight: FontWeight.w800),
+            onPressed: onAction,
+            child: Text(
+              actionText,
+              style: GoogleFonts.nunito(fontSize: 14.sp, fontWeight: FontWeight.w700, color: const Color(0xFFC07AD0)),
             ),
           ),
         ],
@@ -248,40 +404,51 @@ class _HabitList extends StatelessWidget {
   }
 }
 
-class _BottomNav extends StatelessWidget {
+class _WeeklyReportCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: AppColors.creamBg.withOpacity(0.95),
-        border: Border(top: BorderSide(color: AppColors.primaryPink.withOpacity(0.1))),
-      ),
+    // Mock data for visual excellence - in real app this would come from a Cubit
+    final List<double> myProgress = [0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.3];
+    final List<double> partnerProgress = [0.5, 0.4, 0.8, 0.6, 0.7, 0.4, 0.5];
+    final List<String> days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Container(
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _NavItem(icon: Icons.dashboard_rounded, label: 'Home', isSelected: false, onTap: () => context.go('/home')),
-          _NavItem(
-            icon: Icons.check_circle_rounded,
-            label: 'Habits',
-            isSelected: true,
-            onTap: () => context.go('/habits'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Weekly Overview',
+                style: GoogleFonts.baloo2(fontSize: 18.sp, fontWeight: FontWeight.w800, color: const Color(0xFF3A2030)),
+              ),
+              Text(
+                '+12% this week',
+                style: GoogleFonts.nunito(fontSize: 12.sp, fontWeight: FontWeight.w700, color: Colors.green),
+              ),
+            ],
           ),
-          _NavItem(icon: Icons.favorite_rounded, label: 'Duo', isSelected: false, onTap: () => context.go('/duo')),
-          _NavItem(
-            icon: Icons.add_circle_rounded,
-            label: 'Add',
-            isSelected: false,
-            isAction: true,
-            onTap: () => context.push('/add-habit'),
-          ),
-          _NavItem(icon: Icons.park_rounded, label: 'Garden', isSelected: false, onTap: () => context.go('/garden')),
-          _NavItem(
-            icon: Icons.person_rounded,
-            label: 'Profile',
-            isSelected: false,
-            onTap: () => context.go('/profile'),
+          SizedBox(height: 20.h),
+          SizedBox(
+            height: 100.h,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (index) {
+                return _BarChartGroup(
+                  day: days[index],
+                  myProgress: myProgress[index],
+                  partnerProgress: partnerProgress[index],
+                );
+              }),
+            ),
           ),
         ],
       ),
@@ -289,51 +456,63 @@ class _BottomNav extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final bool isAction;
-  final VoidCallback onTap;
+class _BarChartGroup extends StatelessWidget {
+  final String day;
+  final double myProgress;
+  final double partnerProgress;
 
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.isAction = false,
-  });
+  const _BarChartGroup({required this.day, required this.myProgress, required this.partnerProgress});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(onTap: onTap, child: _buildContent(context));
-  }
-
-  Widget _buildContent(BuildContext context) {
-    if (isAction) {
-      return Container(
-        width: 50,
-        height: 50,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(colors: [AppColors.primaryPink, AppColors.lavender]),
-        ),
-        child: Icon(icon, color: Colors.white, size: 30),
-      );
-    }
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Icon(icon, color: isSelected ? AppColors.lavender : AppColors.textMuted),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              width: 8.w,
+              height: 60.h * myProgress,
+              decoration: BoxDecoration(color: const Color(0xFFE896B0), borderRadius: BorderRadius.circular(4)),
+            ),
+            SizedBox(width: 4.w),
+            Container(
+              width: 8.w,
+              height: 60.h * partnerProgress,
+              decoration: BoxDecoration(color: const Color(0xFFC07AD0), borderRadius: BorderRadius.circular(4)),
+            ),
+          ],
+        ),
+        SizedBox(height: 8.h),
         Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: isSelected ? AppColors.lavender : AppColors.textMuted,
-          ),
+          day,
+          style: GoogleFonts.nunito(fontSize: 10.sp, fontWeight: FontWeight.w700, color: Colors.grey),
         ),
       ],
+    );
+  }
+}
+
+class _AddHabitButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/add-habit'),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 14.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFDDBE8).withOpacity(0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE896B0).withOpacity(0.5), style: BorderStyle.solid),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '+ Add New Habit',
+          style: GoogleFonts.baloo2(fontSize: 16.sp, fontWeight: FontWeight.w800, color: const Color(0xFFE896B0)),
+        ),
+      ),
     );
   }
 }

@@ -18,7 +18,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   int _selectedCategoryIndex = 1; // wellness
   final int _targetCount = 1;
   bool _isShared = false;
-  final Color _selectedColor = AppColors.pinkLight;
+  Color _selectedColor = AppColors.pinkLight;
 
   final List<String> _emojis = ['🌸', '🧘', '💧', '🚶', '📖', '✍️', '🥦', '☕', '🛌', '🧹'];
   final List<Color> _colors = [
@@ -64,6 +64,31 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: Text(e, style: const TextStyle(fontSize: 24)),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 20),
+            const Text('Icon Color', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              children: _colors
+                  .map(
+                    (color) => GestureDetector(
+                      onTap: () => setState(() => _selectedColor = color),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _selectedColor == color ? AppColors.primaryPink : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
                       ),
                     ),
                   )

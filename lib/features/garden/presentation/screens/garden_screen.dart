@@ -4,8 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 
-class GardenScreen extends StatelessWidget {
+class GardenScreen extends StatefulWidget {
   const GardenScreen({super.key});
+
+  @override
+  State<GardenScreen> createState() => _GardenScreenState();
+}
+
+class _GardenScreenState extends State<GardenScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<GardenCubit>().init();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +37,38 @@ class GardenScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 if (index < state.history.length) {
                   final plant = state.history[index];
-                  return _PlantCard(emoji: plant.emoji, name: plant.name, growth: plant.growthPercent, isLocked: false);
+                  return _PlantCard(
+                    emoji: plant.emoji,
+                    name: plant.name,
+                    growth: plant.growthPercent,
+                    isLocked: false,
+                  );
                 }
                 return const _PlantCard(emoji: '🌻', name: 'Sunflower', growth: 0, isLocked: true);
               },
+            );
+          } else if (state is GardenError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('🪴', style: TextStyle(fontSize: 64)),
+                    const SizedBox(height: 16),
+                    Text(
+                      state.message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => context.read<GardenCubit>().init(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
             );
           }
           return const Center(child: CircularProgressIndicator());

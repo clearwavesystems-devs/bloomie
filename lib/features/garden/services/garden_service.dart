@@ -7,6 +7,8 @@ class GardenService {
   GardenService(this._db);
 
   Future<Plant?> getPlantForDuo(String duoSessionId) => _db.getPlantForDuo(duoSessionId);
+  
+  Future<DuoSession?> getActiveSession() => _db.getActiveSession();
 
   Future<void> waterPlant(String plantId) async {
     final plant = await (_db.select(_db.plants)..where((t) => t.id.equals(plantId))).getSingleOrNull();

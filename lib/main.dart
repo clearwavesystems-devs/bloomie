@@ -57,6 +57,29 @@ void main() async {
       createdAt: DateTime.now(),
       isArchived: false,
     ));
+
+    // Seed Duo Session and Plant
+    const sessionId = 'default_session';
+    await database.insertSession(DuoSession(
+      id: sessionId,
+      userAId: 'user_1',
+      userBId: 'user_2',
+      sharedPlantId: 'plant_1',
+      inviteCode: 'BLOOM123',
+      isActive: true,
+      createdAt: DateTime.now(),
+    ));
+
+    await database.insertPlant(Plant(
+      id: 'plant_1',
+      name: 'Eternal Rose',
+      emoji: '🌹',
+      stage: 1,
+      growthPercent: 0.1,
+      duoSessionId: sessionId,
+      waterCount: 10,
+      unlockedAt: DateTime.now(),
+    ));
   }
 
   runApp(BloomieApp(
@@ -99,7 +122,7 @@ class BloomieApp extends StatelessWidget {
             title: 'Bloomie Duo Mode',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
-            routerConfig: AppRouter.buildRouter(),
+            routerConfig: AppRouter.router,
           ),
         );
       },

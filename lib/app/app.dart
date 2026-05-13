@@ -24,7 +24,7 @@ class _AppSkeletonState extends State<AppSkeleton> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _router = AppRouter.buildRouter();
+    _router = AppRouter.router;
   }
 
   @override
