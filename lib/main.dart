@@ -1,7 +1,8 @@
+import 'package:bloomie/features/auth/cubit/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'core/theme/app_theme.dart';
 import 'core/database/app_database.dart';
 import 'features/habits/cubit/habits_cubit.dart';
@@ -19,6 +20,7 @@ import 'features/shop/cubit/shop_cubit.dart';
 import 'features/shop/services/shop_service.dart';
 import 'features/auth/services/auth_service.dart';
 import 'features/auth/cubit/auth_cubit.dart';
+
 import 'features/adventure/cubit/adventure_cubit.dart';
 import 'package:bloomie/core/config/supabase_config.dart';
 import 'app/router.dart';
@@ -26,10 +28,7 @@ import 'app/router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
-  );
+  await Supabase.initialize(url: SupabaseConfig.url, anonKey: SupabaseConfig.anonKey);
 
   final database = AppDatabase();
 
@@ -170,11 +169,22 @@ class BloomieApp extends StatelessWidget {
             BlocProvider(create: (_) => ShopCubit(shopService, profileCubit, database)),
             BlocProvider(create: (_) => AdventureCubit(database, profileCubit)),
           ],
-          child: MaterialApp.router(
-            title: 'Bloomie',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.light,
-            routerConfig: AppRouter.router,
+          child: BlocListener<AuthCubit, AuthState>(
+            listener: (context, state) {
+              if (state is AuthUnauthenticated) {
+                final routeState = AppRouter.router.routerDelegate.currentConfiguration;
+                final location = routeState.uri.path;
+                if (location != '/splash') {
+                  AppRouter.router.go('/auth');
+                }
+              }
+            },
+            child: MaterialApp.router(
+              title: 'Bloomie',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light,
+              routerConfig: AppRouter.router,
+            ),
           ),
         );
       },
