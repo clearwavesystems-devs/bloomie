@@ -136,7 +136,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                       frequency: 0, // daily
                       customDays: '[]',
                       isSharedWithPartner: _isShared,
-                      iconBg: _selectedColor.value,
+                      iconBg: _selectedColor.toARGB32(),
                       createdAt: DateTime.now(),
                       isArchived: false,
                       currentCount: 0,

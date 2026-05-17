@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
 
@@ -12,33 +13,53 @@ class AuthService {
 
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 
-  Future<UserModel> signUp({required String email, required String password, required String displayName}) async {
+  Future<UserModel> signUp({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async {
     try {
-      print('AuthService [DEBUG]: Starting signUp for $email');
-      final response = await _client.auth.signUp(email: email, password: password);
-      print('AuthService [DEBUG]: auth.signUp complete. User ID: ${response.user?.id}');
+      debugPrint('AuthService [DEBUG]: Starting signUp for $email');
+      final response = await _client.auth.signUp(
+        email: email,
+        password: password,
+      );
+      debugPrint(
+        'AuthService [DEBUG]: auth.signUp complete. User ID: ${response.user?.id}',
+      );
 
       final user = response.user;
       if (user == null) throw Exception('Sign up failed — no user returned.');
 
       // Create cloud profile record
-      final newProfile = UserModel(id: user.id, name: displayName, avatarEmoji: '🌸', joinedAt: DateTime.now());
+      final newProfile = UserModel(
+        id: user.id,
+        name: displayName,
+        avatarEmoji: '🌸',
+        joinedAt: DateTime.now(),
+      );
 
-      print('AuthService [DEBUG]: Upserting profile record...');
+      debugPrint('AuthService [DEBUG]: Upserting profile record...');
       await _upsertProfile(newProfile);
-      print('AuthService [DEBUG]: Profile upsert complete!');
+      debugPrint('AuthService [DEBUG]: Profile upsert complete!');
       return newProfile;
     } catch (e, stack) {
-      print('AuthService.signUp Exception: $e');
-      print('AuthService.signUp StackTrace: $stack');
+      debugPrint('AuthService.signUp Exception: $e');
+      debugPrint('AuthService.signUp StackTrace: $stack');
       rethrow;
     }
   }
 
   // ── Sign In ────────────────────────────────
 
-  Future<UserModel> signIn({required String email, required String password}) async {
-    final response = await _client.auth.signInWithPassword(email: email, password: password);
+  Future<UserModel> signIn({
+    required String email,
+    required String password,
+  }) async {
+    final response = await _client.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
 
     final user = response.user;
     if (user == null) throw Exception('Sign in failed — invalid credentials.');
@@ -60,7 +81,7 @@ class AuthService {
         // Remove profile from Supabase (cascades to related features)
         await _client.from('profiles').delete().eq('id', user.id);
       } catch (e) {
-        print('AuthService.deleteAccount warning: $e');
+        debugPrint('AuthService.deleteAccount warning: $e');
       }
       await signOut();
     }
@@ -70,7 +91,11 @@ class AuthService {
 
   /// Fetches profile from Supabase. Falls back to a new default if missing.
   Future<UserModel> fetchProfile(String userId) async {
-    final data = await _client.from('profiles').select().eq('id', userId).maybeSingle();
+    final data = await _client
+        .from('profiles')
+        .select()
+        .eq('id', userId)
+        .maybeSingle();
 
     if (data == null) {
       // First-time login on a new device — create a skeleton profile

@@ -225,7 +225,7 @@ class _ShopScreenState extends State<ShopScreen> {
                                           onBuy: () async {
                                             final bought = await context.read<ShopCubit>().buyItem(item);
                                             if (bought) {
-                                              if (!mounted) return;
+                                              if (!context.mounted) return;
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
                                                   content: Text(
@@ -236,7 +236,7 @@ class _ShopScreenState extends State<ShopScreen> {
                                                 ),
                                               );
                                             } else {
-                                              if (!mounted) return;
+                                              if (!context.mounted) return;
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
                                                   content: Text(

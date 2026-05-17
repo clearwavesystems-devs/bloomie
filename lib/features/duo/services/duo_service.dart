@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/database/app_database.dart';
 import '../models/partner_model.dart';
@@ -31,8 +32,12 @@ class DuoService {
           final userBId = data['user_b_id'] as String?;
 
           // Automatic 24-hour expiration for invite codes that haven't been joined
-          if (userBId == null && DateTime.now().difference(createdAt).inHours >= 24) {
-            await _supabase.from('duo_sessions').update({'is_active': false}).eq('id', data['id']);
+          if (userBId == null &&
+              DateTime.now().difference(createdAt).inHours >= 24) {
+            await _supabase
+                .from('duo_sessions')
+                .update({'is_active': false})
+                .eq('id', data['id']);
             await _db.customStatement('UPDATE duo_sessions SET is_active = 0');
             return null;
           }
@@ -58,7 +63,9 @@ class DuoService {
           return null;
         }
       } catch (e) {
-        print('DuoService: Error fetching Supabase session, falling back: $e');
+        debugPrint(
+          'DuoService: Error fetching Supabase session, falling back: $e',
+        );
       }
     }
 
@@ -101,17 +108,19 @@ class DuoService {
     );
 
     // Seed shared plant in local SQLite too
-    await _db.insertPlant(Plant(
-      id: newPlantId,
-      name: 'Eternal Rose',
-      emoji: '🌹',
-      stage: 1,
-      growthPercent: 0.1,
-      ownerId: 'shared',
-      waterCount: 10,
-      duoSessionId: session.id,
-      unlockedAt: DateTime.now(),
-    ));
+    await _db.insertPlant(
+      Plant(
+        id: newPlantId,
+        name: 'Eternal Rose',
+        emoji: '🌹',
+        stage: 1,
+        growthPercent: 0.1,
+        ownerId: 'shared',
+        waterCount: 10,
+        duoSessionId: session.id,
+        unlockedAt: DateTime.now(),
+      ),
+    );
 
     await _db.insertSession(session);
     return session;
@@ -175,17 +184,19 @@ class DuoService {
     );
 
     // Seed shared plant in local database
-    await _db.insertPlant(Plant(
-      id: session.sharedPlantId,
-      name: 'Eternal Rose',
-      emoji: '🌹',
-      stage: 1,
-      growthPercent: 0.1,
-      ownerId: 'shared',
-      waterCount: 10,
-      duoSessionId: session.id,
-      unlockedAt: DateTime.now(),
-    ));
+    await _db.insertPlant(
+      Plant(
+        id: session.sharedPlantId,
+        name: 'Eternal Rose',
+        emoji: '🌹',
+        stage: 1,
+        growthPercent: 0.1,
+        ownerId: 'shared',
+        waterCount: 10,
+        duoSessionId: session.id,
+        unlockedAt: DateTime.now(),
+      ),
+    );
 
     await _db.insertSession(session);
     return session;
@@ -213,13 +224,16 @@ class DuoService {
           name: data['name'] as String? ?? 'Friend',
           avatarEmoji: data['avatar_emoji'] as String? ?? '🐰',
           lastActiveAt: DateTime.now(),
-          todayHabitsDone: xp ~/ 50 % 5, // derived from actual habit completions / XP progress
+          todayHabitsDone:
+              xp ~/
+              50 %
+              5, // derived from actual habit completions / XP progress
           todayHabitsTotal: 5,
           currentStreak: streak,
         );
       }
     } catch (e) {
-      print('DuoService: Error loading partner status from Supabase: $e');
+      debugPrint('DuoService: Error loading partner status from Supabase: $e');
     }
 
     // Default Fallback

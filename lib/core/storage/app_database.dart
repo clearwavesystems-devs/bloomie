@@ -7,7 +7,6 @@ import 'package:path/path.dart' as p;
 part 'app_database.g.dart';
 
 // ── Example Tables ────────────────────────────────────────────────────────
-// TODO: Add your own tables based on your app's data model
 
 @DataClassName('UserData')
 class UserTable extends Table {
@@ -28,10 +27,12 @@ class UserTable extends Table {
 
 // ── Database ───────────────────────────────────────────────────────────────
 
-@DriftDatabase(tables: [
-  UserTable,
-  // Add more tables here
-])
+@DriftDatabase(
+  tables: [
+    UserTable,
+    // Add more tables here
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   static final AppDatabase instance = AppDatabase._internal();
 
@@ -42,14 +43,14 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onUpgrade: (m, from, to) async {
-          // Handle migrations here
-          // Example:
-          // if (from < 2) {
-          //   await m.addColumn(userTable, userTable.newColumn);
-          // }
-        },
-      );
+    onUpgrade: (m, from, to) async {
+      // Handle migrations here
+      // Example:
+      // if (from < 2) {
+      //   await m.addColumn(userTable, userTable.newColumn);
+      // }
+    },
+  );
 
   // ── User Table Methods ───────────────────────────────────────────────────
 
@@ -59,10 +60,9 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<UserData>> watchAllUsers() =>
       (select(userTable)..where((t) => t.deletedAt.isNull())).watch();
 
-  Future<UserData?> getUserById(String id) =>
-      (select(userTable)
-            ..where((t) => t.id.equals(id) & t.deletedAt.isNull()))
-          .getSingleOrNull();
+  Future<UserData?> getUserById(String id) => (select(
+    userTable,
+  )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
 
   Future insertUser(UserData user) =>
       into(userTable).insert(user, mode: InsertMode.insertOrReplace);
@@ -83,13 +83,13 @@ class AppDatabase extends _$AppDatabase {
       (select(userTable)..where((t) => t.dirty.equals(true))).get();
 
   Future<void> markUserClean(String id) =>
-      (update(userTable)..where((t) => t.id.equals(id)))
-          .write(const UserTableCompanion(dirty: Value(false)));
+      (update(userTable)..where((t) => t.id.equals(id))).write(
+        const UserTableCompanion(dirty: Value(false)),
+      );
 
   // ── Sync Helpers ─────────────────────────────────────────────────────────
 
   Future<String> _getDeviceId() async {
-    // TODO: Implement device identity
     return 'device_${DateTime.now().millisecondsSinceEpoch}';
   }
 

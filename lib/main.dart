@@ -2,9 +2,12 @@ import 'package:bloomie/features/auth/cubit/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'core/theme/app_theme.dart';
 import 'core/database/app_database.dart';
+import 'core/sync/data_sync_service.dart';
+import 'core/sync/sync_queue_service.dart';
 import 'features/habits/cubit/habits_cubit.dart';
 import 'features/habits/services/habit_service.dart';
 import 'features/duo/cubit/duo_cubit.dart';
@@ -27,92 +30,32 @@ import 'app/router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Provider.debugCheckInvalidValueType = null;
 
-  await Supabase.initialize(url: SupabaseConfig.url, anonKey: SupabaseConfig.anonKey);
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
 
   final database = AppDatabase();
 
+  // Register Sync Queue
+  final syncQueueService = SyncQueueService();
+  await syncQueueService.loadQueueFromStorage();
+  syncQueueService.startNetworkMonitoring();
+
   // Register Services
-  final habitService = HabitService(database);
+  final habitService = HabitService(database, syncQueueService);
   final duoService = DuoService(database);
   final gardenService = GardenService(database);
-  final taskService = TaskService(database);
-  final journalService = JournalService(database);
+  final taskService = TaskService(database, syncQueueService);
+  final journalService = JournalService(database, syncQueueService);
   final shopService = ShopService(database);
-
-  // Seed initial data if empty
-  final existingHabits = await habitService.getAllHabits();
-  if (existingHabits.isEmpty) {
-    await habitService.saveHabit(
-      Habit(
-        id: 'stretch_id',
-        name: 'Morning Stretch',
-        emoji: '🧘',
-        category: 1,
-        frequency: 0,
-        customDays: '[]',
-        iconBg: 0xFFF2E8FF,
-        isSharedWithPartner: true,
-        currentCount: 0,
-        targetCount: 1,
-        streakCount: 0,
-        longestStreak: 0,
-        xpReward: 50,
-        createdAt: DateTime.now(),
-        isArchived: false,
-      ),
-    );
-    await habitService.saveHabit(
-      Habit(
-        id: 'water_id',
-        name: 'Drink 8 glasses',
-        emoji: '💧',
-        category: 0,
-        frequency: 0,
-        customDays: '[]',
-        targetCount: 8,
-        iconBg: 0xFFFDE8F0,
-        isSharedWithPartner: true,
-        currentCount: 0,
-        streakCount: 0,
-        longestStreak: 0,
-        xpReward: 30,
-        createdAt: DateTime.now(),
-        isArchived: false,
-      ),
-    );
-
-    // Seed Duo Session and Plant
-    const sessionId = 'default_session';
-    await database.insertSession(
-      DuoSession(
-        id: sessionId,
-        userAId: 'user_1',
-        userBId: 'user_2',
-        sharedPlantId: 'plant_1',
-        inviteCode: 'BLOOM123',
-        isActive: true,
-        createdAt: DateTime.now(),
-      ),
-    );
-
-    await database.insertPlant(
-      Plant(
-        id: 'plant_1',
-        name: 'Eternal Rose',
-        emoji: '🌹',
-        stage: 1,
-        growthPercent: 0.1,
-        ownerId: 'shared',
-        waterCount: 10,
-        unlockedAt: DateTime.now(),
-      ),
-    );
-  }
 
   runApp(
     BloomieApp(
       database: database,
+      syncQueueService: syncQueueService,
       habitService: habitService,
       duoService: duoService,
       gardenService: gardenService,
@@ -125,23 +68,32 @@ void main() async {
 
 class BloomieApp extends StatelessWidget {
   final AppDatabase database;
+  final SyncQueueService syncQueueService;
   final HabitService habitService;
   final DuoService duoService;
   final GardenService gardenService;
   final TaskService taskService;
   final JournalService journalService;
   final ShopService shopService;
+  late final DataSyncService dataSyncService;
 
-  const BloomieApp({
+  BloomieApp({
     super.key,
     required this.database,
+    required this.syncQueueService,
     required this.habitService,
     required this.duoService,
     required this.gardenService,
     required this.taskService,
     required this.journalService,
     required this.shopService,
-  });
+  }) {
+    dataSyncService = DataSyncService(
+      habitService: habitService,
+      taskService: taskService,
+      journalService: journalService,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,33 +109,57 @@ class BloomieApp extends StatelessWidget {
         final authCubit = AuthCubit(authService, profileCubit);
         authCubit.checkSession(); // Restore session on startup
 
-        return MultiBlocProvider(
+        return MultiRepositoryProvider(
           providers: [
-            BlocProvider.value(value: profileCubit),
-            BlocProvider.value(value: authCubit),
-            BlocProvider(create: (_) => HabitsCubit(habitService, profileCubit)),
-            BlocProvider(create: (_) => DuoCubit(duoService)),
-            BlocProvider(create: (_) => GardenCubit(gardenService, profileCubit)),
-            BlocProvider(create: (_) => TaskCubit(taskService, profileCubit)),
-            BlocProvider(create: (_) => JournalCubit(journalService, profileCubit)),
-            BlocProvider(create: (_) => ShopCubit(shopService, profileCubit, database)),
-            BlocProvider(create: (_) => AdventureCubit(database, profileCubit)),
+            RepositoryProvider.value(value: database),
+            RepositoryProvider.value(value: syncQueueService),
+            RepositoryProvider.value(value: dataSyncService),
+            RepositoryProvider.value(value: habitService),
+            RepositoryProvider.value(value: taskService),
+            RepositoryProvider.value(value: journalService),
           ],
-          child: BlocListener<AuthCubit, AuthState>(
-            listener: (context, state) {
-              if (state is AuthUnauthenticated) {
-                final routeState = AppRouter.router.routerDelegate.currentConfiguration;
-                final location = routeState.uri.path;
-                if (location != '/splash') {
-                  AppRouter.router.go('/auth');
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider.value(value: profileCubit),
+              BlocProvider.value(value: authCubit),
+              BlocProvider(
+                create: (_) => HabitsCubit(habitService, profileCubit),
+              ),
+              BlocProvider(create: (_) => DuoCubit(duoService)),
+              BlocProvider(
+                create: (_) => GardenCubit(gardenService, profileCubit),
+              ),
+              BlocProvider(create: (_) => TaskCubit(taskService, profileCubit)),
+              BlocProvider(
+                create: (_) => JournalCubit(journalService, profileCubit),
+              ),
+              BlocProvider(
+                create: (_) => ShopCubit(shopService, profileCubit, database),
+              ),
+              BlocProvider(
+                create: (_) => AdventureCubit(database, profileCubit),
+              ),
+            ],
+            child: BlocListener<AuthCubit, AuthState>(
+              listener: (context, state) {
+                if (state is AuthAuthenticated) {
+                  // Sync data from Supabase when user logs in or session is restored
+                  dataSyncService.syncInBackground();
+                } else if (state is AuthUnauthenticated) {
+                  final routeState =
+                      AppRouter.router.routerDelegate.currentConfiguration;
+                  final location = routeState.uri.path;
+                  if (location != '/splash') {
+                    AppRouter.router.go('/auth');
+                  }
                 }
-              }
-            },
-            child: MaterialApp.router(
-              title: 'Bloomie',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.light,
-              routerConfig: AppRouter.router,
+              },
+              child: MaterialApp.router(
+                title: 'Bloomie',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.light,
+                routerConfig: AppRouter.router,
+              ),
             ),
           ),
         );

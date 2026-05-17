@@ -64,8 +64,7 @@ class Plants extends Table {
   TextColumn get name => text()();
   TextColumn get emoji => text()();
   IntColumn get stage => integer()(); // 0=Seed 1=Sprout 2=Bud 3=Bloom 4=Garden
-  RealColumn get growthPercent =>
-      real().withDefault(const Constant(0.0))();
+  RealColumn get growthPercent => real().withDefault(const Constant(0.0))();
   TextColumn get duoSessionId =>
       text().nullable().references(DuoSessions, #id)();
   TextColumn get ownerId =>
@@ -98,8 +97,7 @@ class JournalEntries extends Table {
   TextColumn get id => text()();
   TextColumn get content => text()(); // The journal entry text body
   TextColumn get mood => text()(); // emoji string: '😊' '😔' etc.
-  IntColumn get moodScore =>
-      integer().withDefault(const Constant(3))(); // 1–5
+  IntColumn get moodScore => integer().withDefault(const Constant(3))(); // 1–5
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -137,16 +135,18 @@ class AdventureLands extends Table {
 // Database
 // ─────────────────────────────────────────────
 
-@DriftDatabase(tables: [
-  Habits,
-  HabitLogs,
-  DuoSessions,
-  Plants,
-  Tasks,
-  JournalEntries,
-  ShopItems,
-  AdventureLands,
-])
+@DriftDatabase(
+  tables: [
+    Habits,
+    HabitLogs,
+    DuoSessions,
+    Plants,
+    Tasks,
+    JournalEntries,
+    ShopItems,
+    AdventureLands,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -155,45 +155,47 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (Migrator m) async {
-          await m.createAll();
-          await _seedShopItems();
-          await _seedAdventureLands();
-        },
-        onUpgrade: (Migrator m, int from, int to) async {
-          if (from < 2) {
-            await m.createTable(tasks);
-            await m.createTable(journalEntries);
-            await m.createTable(shopItems);
-            await m.createTable(adventureLands);
-            await m.addColumn(habits, habits.xpReward);
-            await m.addColumn(habits, habits.lastCompletedAt);
-            await m.addColumn(plants, plants.ownerId);
-            await _seedShopItems();
-            await _seedAdventureLands();
-          }
-          if (from < 3) {
-            // SQLite cannot ALTER COLUMN to remove NOT NULL,
-            // so we drop + recreate the plants table with the
-            // correct nullable duo_session_id column.
-            await customStatement('DROP TABLE IF EXISTS plants');
-            await m.createTable(plants);
-          }
-        },
-      );
+    onCreate: (Migrator m) async {
+      await m.createAll();
+      await _seedShopItems();
+      await _seedAdventureLands();
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        await m.createTable(tasks);
+        await m.createTable(journalEntries);
+        await m.createTable(shopItems);
+        await m.createTable(adventureLands);
+        await m.addColumn(habits, habits.xpReward);
+        await m.addColumn(habits, habits.lastCompletedAt);
+        await m.addColumn(plants, plants.ownerId);
+        await _seedShopItems();
+        await _seedAdventureLands();
+      }
+      if (from < 3) {
+        // SQLite cannot ALTER COLUMN to remove NOT NULL,
+        // so we drop + recreate the plants table with the
+        // correct nullable duo_session_id column.
+        await customStatement('DROP TABLE IF EXISTS plants');
+        await m.createTable(plants);
+      }
+    },
+  );
 
   // ── Habit Queries ──────────────────────────
 
   Future<List<Habit>> getAllHabits() =>
       (select(habits)..where((t) => t.isArchived.equals(false))).get();
 
-  Future<int> insertHabit(Habit habit) => into(habits).insert(habit);
+  Future<int> insertHabit(Habit habit) =>
+      into(habits).insertOnConflictUpdate(habit);
 
   Future updateHabit(Habit habit) => update(habits).replace(habit);
 
   Future archiveHabit(String id) =>
-      (update(habits)..where((t) => t.id.equals(id)))
-          .write(const HabitsCompanion(isArchived: Value(true)));
+      (update(habits)..where((t) => t.id.equals(id))).write(
+        const HabitsCompanion(isArchived: Value(true)),
+      );
 
   // ── HabitLog Queries ───────────────────────
 
@@ -205,50 +207,62 @@ class AppDatabase extends _$AppDatabase {
   Future<List<HabitLog>> getLogsForDate(DateTime date) {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
-    return (select(habitLogs)
-          ..where((t) =>
+    return (select(habitLogs)..where(
+          (t) =>
               t.completedAt.isBiggerOrEqualValue(start) &
-              t.completedAt.isSmallerThanValue(end)))
+              t.completedAt.isSmallerThanValue(end),
+        ))
         .get();
   }
 
-  Future<List<HabitLog>> getLogsForHabitSince(
-      String habitId, DateTime since) =>
-      (select(habitLogs)
-            ..where((t) =>
+  Future<List<HabitLog>> getLogsForHabitSince(String habitId, DateTime since) =>
+      (select(habitLogs)..where(
+            (t) =>
                 t.habitId.equals(habitId) &
-                t.completedAt.isBiggerOrEqualValue(since)))
+                t.completedAt.isBiggerOrEqualValue(since),
+          ))
           .get();
 
   // ── Duo Queries ────────────────────────────
 
   Future<DuoSession?> getActiveSession() =>
-      (select(duoSessions)..where((t) => t.isActive.equals(true)))
+      (select(duoSessions)
+            ..where((t) => t.isActive.equals(true))
+            ..limit(1))
           .getSingleOrNull();
 
+  /// Deactivates all sessions (useful for cleanup or logout)
+  Future<void> deactivateAllSessions() => update(
+    duoSessions,
+  ).write(const DuoSessionsCompanion(isActive: Value(false)));
+
   Future<int> insertSession(DuoSession session) =>
-      into(duoSessions).insert(session);
+      into(duoSessions).insertOnConflictUpdate(session);
 
   // ── Plant Queries ──────────────────────────
 
   Future<Plant?> getPlantForDuo(String duoSessionId) =>
-      (select(plants)
-            ..where((t) =>
+      (select(plants)..where(
+            (t) =>
                 t.duoSessionId.equals(duoSessionId) &
-                t.stage.isSmallerThanValue(4)))
+                t.stage.isSmallerThanValue(4),
+          ))
           .getSingleOrNull();
 
   Future<Plant?> getActiveSoloPlant() =>
       (select(plants)
-            ..where((t) =>
-                t.ownerId.equals('me') & t.stage.isSmallerThanValue(4))
-            ..orderBy([(t) => OrderingTerm.desc(t.unlockedAt)]))
+            ..where(
+              (t) => t.ownerId.equals('me') & t.stage.isSmallerThanValue(4),
+            )
+            ..orderBy([(t) => OrderingTerm.desc(t.unlockedAt)])
+            ..limit(1))
           .getSingleOrNull();
 
   Future<List<Plant>> getSoloPlants() =>
       (select(plants)..where((t) => t.ownerId.equals('me'))).get();
 
-  Future<int> insertPlant(Plant plant) => into(plants).insert(plant);
+  Future<int> insertPlant(Plant plant) =>
+      into(plants).insertOnConflictUpdate(plant);
   Future updatePlant(Plant plant) => update(plants).replace(plant);
   Future<List<Plant>> getAllPlants() => select(plants).get();
 
@@ -266,7 +280,7 @@ class AppDatabase extends _$AppDatabase {
             ..orderBy([(t) => OrderingTerm.desc(t.completedAt)]))
           .get();
 
-  Future<int> insertTask(Task task) => into(tasks).insert(task);
+  Future<int> insertTask(Task task) => into(tasks).insertOnConflictUpdate(task);
   Future updateTask(Task task) => update(tasks).replace(task);
   Future deleteTask(String id) =>
       (delete(tasks)..where((t) => t.id.equals(id))).go();
@@ -277,10 +291,11 @@ class AppDatabase extends _$AppDatabase {
     final start = DateTime.now();
     final dayStart = DateTime(start.year, start.month, start.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
-    return (select(journalEntries)
-          ..where((t) =>
+    return (select(journalEntries)..where(
+          (t) =>
               t.createdAt.isBiggerOrEqualValue(dayStart) &
-              t.createdAt.isSmallerThanValue(dayEnd)))
+              t.createdAt.isSmallerThanValue(dayEnd),
+        ))
         .getSingleOrNull();
   }
 
@@ -288,9 +303,11 @@ class AppDatabase extends _$AppDatabase {
     final start = DateTime(year, month);
     final end = DateTime(year, month + 1);
     return (select(journalEntries)
-          ..where((t) =>
-              t.createdAt.isBiggerOrEqualValue(start) &
-              t.createdAt.isSmallerThanValue(end))
+          ..where(
+            (t) =>
+                t.createdAt.isBiggerOrEqualValue(start) &
+                t.createdAt.isSmallerThanValue(end),
+          )
           ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .get();
   }
@@ -301,12 +318,12 @@ class AppDatabase extends _$AppDatabase {
             ..limit(limit))
           .get();
 
-  Future<List<JournalEntry>> getAllJournalEntries() =>
-      (select(journalEntries)..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-          .get();
+  Future<List<JournalEntry>> getAllJournalEntries() => (select(
+    journalEntries,
+  )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
 
   Future<int> insertJournalEntry(JournalEntry entry) =>
-      into(journalEntries).insert(entry);
+      into(journalEntries).insertOnConflictUpdate(entry);
 
   Future updateJournalEntry(JournalEntry entry) =>
       update(journalEntries).replace(entry);
@@ -327,48 +344,153 @@ class AppDatabase extends _$AppDatabase {
   Future updateShopItem(ShopItem item) => update(shopItems).replace(item);
 
   Future equipShopItem(String id, String category) => transaction(() async {
-        // Unequip all items in this category
-        await (update(shopItems)..where((t) => t.category.equals(category)))
-            .write(const ShopItemsCompanion(equipped: Value(false)));
-        // Equip this specific item
-        await (update(shopItems)..where((t) => t.id.equals(id)))
-            .write(const ShopItemsCompanion(equipped: Value(true)));
-      });
+    // Unequip all items in this category
+    await (update(shopItems)..where((t) => t.category.equals(category))).write(
+      const ShopItemsCompanion(equipped: Value(false)),
+    );
+    // Equip this specific item
+    await (update(shopItems)..where((t) => t.id.equals(id))).write(
+      const ShopItemsCompanion(equipped: Value(true)),
+    );
+  });
 
   Future unequipShopItem(String id) =>
-      (update(shopItems)..where((t) => t.id.equals(id)))
-          .write(const ShopItemsCompanion(equipped: Value(false)));
+      (update(shopItems)..where((t) => t.id.equals(id))).write(
+        const ShopItemsCompanion(equipped: Value(false)),
+      );
 
   // ── Adventure Queries ──────────────────────
 
-  Future<List<AdventureLand>> getAllLands() =>
-      (select(adventureLands)
-            ..orderBy([(t) => OrderingTerm.asc(t.requiredLevel)]))
-          .get();
+  Future<List<AdventureLand>> getAllLands() => (select(
+    adventureLands,
+  )..orderBy([(t) => OrderingTerm.asc(t.requiredLevel)])).get();
 
-  Future updateLand(AdventureLand land) =>
-      update(adventureLands).replace(land);
+  Future updateLand(AdventureLand land) => update(adventureLands).replace(land);
 
   // ── Seed Data ──────────────────────────────
 
   Future<void> _seedShopItems() async {
     final items = [
       // Pet Accessories
-      ShopItem(id: 'acc_bow', name: 'Pink Bow', emoji: '🎀', price: 80, category: 'pet_accessory', owned: false, equipped: false),
-      ShopItem(id: 'acc_crown', name: 'Flower Crown', emoji: '👑', price: 200, category: 'pet_accessory', owned: false, equipped: false),
-      ShopItem(id: 'acc_hat', name: 'Sun Hat', emoji: '👒', price: 120, category: 'pet_accessory', owned: false, equipped: false),
-      ShopItem(id: 'acc_scarf', name: 'Cozy Scarf', emoji: '🧣', price: 100, category: 'pet_accessory', owned: false, equipped: false),
-      ShopItem(id: 'acc_glasses', name: 'Star Glasses', emoji: '🕶️', price: 150, category: 'pet_accessory', owned: false, equipped: false),
-      ShopItem(id: 'acc_wings', name: 'Fairy Wings', emoji: '🦋', price: 300, category: 'pet_accessory', owned: false, equipped: false),
-      ShopItem(id: 'acc_ribbon', name: 'Silk Ribbon', emoji: '🎗️', price: 60, category: 'pet_accessory', owned: false, equipped: false),
+      ShopItem(
+        id: 'acc_bow',
+        name: 'Pink Bow',
+        emoji: '🎀',
+        price: 80,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_crown',
+        name: 'Flower Crown',
+        emoji: '👑',
+        price: 200,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_hat',
+        name: 'Sun Hat',
+        emoji: '👒',
+        price: 120,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_scarf',
+        name: 'Cozy Scarf',
+        emoji: '🧣',
+        price: 100,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_glasses',
+        name: 'Star Glasses',
+        emoji: '🕶️',
+        price: 150,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_wings',
+        name: 'Fairy Wings',
+        emoji: '🦋',
+        price: 300,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_ribbon',
+        name: 'Silk Ribbon',
+        emoji: '🎗️',
+        price: 60,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
       // Plant Skins
-      ShopItem(id: 'skin_golden', name: 'Golden Rose', emoji: '🌼', price: 250, category: 'plant_skin', owned: false, equipped: false),
-      ShopItem(id: 'skin_crystal', name: 'Crystal Bloom', emoji: '💎', price: 400, category: 'plant_skin', owned: false, equipped: false),
-      ShopItem(id: 'skin_rainbow', name: 'Rainbow Flower', emoji: '🌈', price: 350, category: 'plant_skin', owned: false, equipped: false),
-      ShopItem(id: 'skin_cherry', name: 'Cherry Blossom', emoji: '🌸', price: 150, category: 'plant_skin', owned: false, equipped: false),
+      ShopItem(
+        id: 'skin_golden',
+        name: 'Golden Rose',
+        emoji: '🌼',
+        price: 250,
+        category: 'plant_skin',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'skin_crystal',
+        name: 'Crystal Bloom',
+        emoji: '💎',
+        price: 400,
+        category: 'plant_skin',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'skin_rainbow',
+        name: 'Rainbow Flower',
+        emoji: '🌈',
+        price: 350,
+        category: 'plant_skin',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'skin_cherry',
+        name: 'Cherry Blossom',
+        emoji: '🌸',
+        price: 150,
+        category: 'plant_skin',
+        owned: false,
+        equipped: false,
+      ),
       // Adventure Keys
-      ShopItem(id: 'key_cave', name: 'Cave Key', emoji: '🗝️', price: 500, category: 'adventure_key', owned: false, equipped: false),
-      ShopItem(id: 'key_sky', name: 'Sky Pass', emoji: '☁️', price: 600, category: 'adventure_key', owned: false, equipped: false),
+      ShopItem(
+        id: 'key_cave',
+        name: 'Cave Key',
+        emoji: '🗝️',
+        price: 500,
+        category: 'adventure_key',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'key_sky',
+        name: 'Sky Pass',
+        emoji: '☁️',
+        price: 600,
+        category: 'adventure_key',
+        owned: false,
+        equipped: false,
+      ),
     ];
     for (final item in items) {
       await into(shopItems).insertOnConflictUpdate(item);
@@ -377,12 +499,60 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _seedAdventureLands() async {
     final lands = [
-      AdventureLand(id: 'land_meadow', name: 'Sunny Meadow', emoji: '🌻', description: 'A bright meadow where your journey begins.', requiredLevel: 1, unlocked: true, progress: 0),
-      AdventureLand(id: 'land_forest', name: 'Whispering Forest', emoji: '🌲', description: 'Ancient trees hold secrets of the forest.', requiredLevel: 3, unlocked: false, progress: 0),
-      AdventureLand(id: 'land_cave', name: 'Crystal Cave', emoji: '💎', description: 'Glittering crystals light this underground world.', requiredLevel: 5, unlocked: false, progress: 0),
-      AdventureLand(id: 'land_marsh', name: 'Moonlit Marsh', emoji: '🌙', description: 'A mystical marshland that glows under the moon.', requiredLevel: 10, unlocked: false, progress: 0),
-      AdventureLand(id: 'land_sky', name: 'Cloud Kingdom', emoji: '☁️', description: 'Floating islands high above the clouds.', requiredLevel: 15, unlocked: false, progress: 0),
-      AdventureLand(id: 'land_cosmos', name: 'Star Cosmos', emoji: '🌟', description: 'The final frontier — a universe of blooms.', requiredLevel: 25, unlocked: false, progress: 0),
+      AdventureLand(
+        id: 'land_meadow',
+        name: 'Sunny Meadow',
+        emoji: '🌻',
+        description: 'A bright meadow where your journey begins.',
+        requiredLevel: 1,
+        unlocked: true,
+        progress: 0,
+      ),
+      AdventureLand(
+        id: 'land_forest',
+        name: 'Whispering Forest',
+        emoji: '🌲',
+        description: 'Ancient trees hold secrets of the forest.',
+        requiredLevel: 3,
+        unlocked: false,
+        progress: 0,
+      ),
+      AdventureLand(
+        id: 'land_cave',
+        name: 'Crystal Cave',
+        emoji: '💎',
+        description: 'Glittering crystals light this underground world.',
+        requiredLevel: 5,
+        unlocked: false,
+        progress: 0,
+      ),
+      AdventureLand(
+        id: 'land_marsh',
+        name: 'Moonlit Marsh',
+        emoji: '🌙',
+        description: 'A mystical marshland that glows under the moon.',
+        requiredLevel: 10,
+        unlocked: false,
+        progress: 0,
+      ),
+      AdventureLand(
+        id: 'land_sky',
+        name: 'Cloud Kingdom',
+        emoji: '☁️',
+        description: 'Floating islands high above the clouds.',
+        requiredLevel: 15,
+        unlocked: false,
+        progress: 0,
+      ),
+      AdventureLand(
+        id: 'land_cosmos',
+        name: 'Star Cosmos',
+        emoji: '🌟',
+        description: 'The final frontier — a universe of blooms.',
+        requiredLevel: 25,
+        unlocked: false,
+        progress: 0,
+      ),
     ];
     for (final land in lands) {
       await into(adventureLands).insertOnConflictUpdate(land);

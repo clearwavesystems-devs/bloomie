@@ -15,22 +15,16 @@ class AnalyticsService {
 
   Future<void> logEvent({
     required String name,
-    Map<String, Object?>? parameters,
+    Map<String, Object>? parameters,
   }) async {
-    await _analytics.logEvent(
-      name: name,
-      parameters: parameters,
-    );
+    await _analytics.logEvent(name: name, parameters: parameters);
   }
 
   Future<void> setUserId(String id) async {
     await _analytics.setUserId(id: id);
   }
 
-  Future<void> setUserProperty({
-    required String name,
-    String? value,
-  }) async {
+  Future<void> setUserProperty({required String name, String? value}) async {
     await _analytics.setUserProperty(name: name, value: value);
   }
 }

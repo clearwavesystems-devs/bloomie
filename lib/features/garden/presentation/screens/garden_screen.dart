@@ -38,14 +38,22 @@ class _GardenScreenState extends State<GardenScreen> {
               itemBuilder: (context, index) {
                 if (index < state.history.length) {
                   final plant = state.history[index];
-                  return _PlantCard(emoji: plant.emoji, name: plant.name, growth: plant.growthPercent, isLocked: false);
+                  return _PlantCard(
+                    emoji: plant.emoji,
+                    name: plant.name,
+                    growth: plant.growthPercent,
+                    isLocked: false,
+                  );
                 }
-                return const _PlantCard(emoji: '🌻', name: 'Sunflower', growth: 0, isLocked: true);
+                return const _PlantCard(
+                  emoji: '🌻',
+                  name: 'Sunflower',
+                  growth: 0,
+                  isLocked: true,
+                );
               },
             );
           } else if (state is GardenError) {
-            debugPrint('GardenError: ${state.message}');
-            debugPrint('GardenError: ${StackTrace.current.toString()}');
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -60,7 +68,10 @@ class _GardenScreenState extends State<GardenScreen> {
                       style: const TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 24),
-                    ElevatedButton(onPressed: () => context.read<GardenCubit>().init(), child: const Text('Retry')),
+                    ElevatedButton(
+                      onPressed: () => context.read<GardenCubit>().init(),
+                      child: const Text('Retry'),
+                    ),
                   ],
                 ),
               ),
@@ -78,7 +89,12 @@ class _PlantCard extends StatelessWidget {
   final double growth;
   final bool isLocked;
 
-  const _PlantCard({required this.emoji, required this.name, required this.growth, required this.isLocked});
+  const _PlantCard({
+    required this.emoji,
+    required this.name,
+    required this.growth,
+    required this.isLocked,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +102,12 @@ class _PlantCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -94,8 +115,15 @@ class _PlantCard extends StatelessWidget {
           Stack(
             alignment: Alignment.center,
             children: [
-              Text(emoji, style: TextStyle(fontSize: 48, color: isLocked ? Colors.grey.withValues(alpha: 0.3) : null)),
-              if (isLocked) const Icon(SolarIconsOutline.lock, color: Colors.grey),
+              Text(
+                emoji,
+                style: TextStyle(
+                  fontSize: 48,
+                  color: isLocked ? Colors.grey.withValues(alpha: 0.3) : null,
+                ),
+              ),
+              if (isLocked)
+                const Icon(SolarIconsOutline.lock, color: Colors.grey),
             ],
           ),
           const SizedBox(height: 12),
@@ -111,9 +139,15 @@ class _PlantCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text('${(growth * 100).toInt()}% grown', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+            Text(
+              '${(growth * 100).toInt()}% grown',
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+            ),
           ] else
-            const Text('Locked', style: TextStyle(fontSize: 10, color: Colors.grey)),
+            const Text(
+              'Locked',
+              style: TextStyle(fontSize: 10, color: Colors.grey),
+            ),
         ],
       ),
     );
