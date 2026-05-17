@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloomie/cubits/network_cubit.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 class ConnectivityIndicator extends StatelessWidget {
   const ConnectivityIndicator({super.key});
@@ -19,7 +20,7 @@ class ConnectivityIndicator extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                    const Icon(SolarIconsOutline.danger, color: Colors.white, size: 16),
                     const SizedBox(width: 8),
                     Text("networkDisconnected", style: const TextStyle(color: Colors.white, fontSize: 12)),
                   ],

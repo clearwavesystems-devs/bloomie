@@ -17,15 +17,19 @@ class DuoLoaded extends DuoState {
   final DuoSession? session;
   final PartnerModel? partner;
   final Map<String, List<double>> weeklyReport;
+  final String? inviteCode;
+  final bool isWaitingForPartner;
 
   const DuoLoaded({
     this.session,
     this.partner,
     required this.weeklyReport,
+    this.inviteCode,
+    this.isWaitingForPartner = false,
   });
 
   @override
-  List<Object?> get props => [session, partner, weeklyReport];
+  List<Object?> get props => [session, partner, weeklyReport, inviteCode, isWaitingForPartner];
 }
 
 class DuoError extends DuoState {

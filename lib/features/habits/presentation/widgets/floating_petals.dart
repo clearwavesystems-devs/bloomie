@@ -7,19 +7,13 @@ class FloatingPetals extends StatefulWidget {
   final double containerWidth;
   final double containerHeight;
 
-  const FloatingPetals({
-    super.key,
-    this.petalCount = 12,
-    required this.containerWidth,
-    required this.containerHeight,
-  });
+  const FloatingPetals({super.key, this.petalCount = 12, required this.containerWidth, required this.containerHeight});
 
   @override
   State<FloatingPetals> createState() => _FloatingPetalsState();
 }
 
-class _FloatingPetalsState extends State<FloatingPetals>
-    with TickerProviderStateMixin {
+class _FloatingPetalsState extends State<FloatingPetals> with TickerProviderStateMixin {
   final List<_PetalParticle> _petals = [];
   late AnimationController _masterController;
   final _rng = math.Random(42);
@@ -27,29 +21,26 @@ class _FloatingPetalsState extends State<FloatingPetals>
   @override
   void initState() {
     super.initState();
-    _masterController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 6),
-    )..repeat();
+    _masterController = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
 
     for (int i = 0; i < widget.petalCount; i++) {
-      _petals.add(_PetalParticle(
-        controller: AnimationController(
-          vsync: this,
-          duration: Duration(milliseconds: 3000 + _rng.nextInt(3000)),
-        )..forward(from: _rng.nextDouble()),
-        startX: _rng.nextDouble() * widget.containerWidth,
-        driftX: (_rng.nextDouble() - 0.5) * 40,
-        size: 6 + _rng.nextDouble() * 8,
-        color: _petalColors[_rng.nextInt(_petalColors.length)],
-        rotation: _rng.nextDouble() * math.pi * 2,
-        rotationSpeed: (_rng.nextDouble() - 0.5) * 4,
-      ));
+      _petals.add(
+        _PetalParticle(
+          controller: AnimationController(
+            vsync: this,
+            duration: Duration(milliseconds: 3000 + _rng.nextInt(3000)),
+          )..forward(from: _rng.nextDouble()),
+          startX: _rng.nextDouble() * widget.containerWidth,
+          driftX: (_rng.nextDouble() - 0.5) * 40,
+          size: 6 + _rng.nextDouble() * 8,
+          color: _petalColors[_rng.nextInt(_petalColors.length)],
+          rotation: _rng.nextDouble() * math.pi * 2,
+          rotationSpeed: (_rng.nextDouble() - 0.5) * 4,
+        ),
+      );
       _petals.last.controller.addStatusListener((status) {
         if (status == AnimationStatus.completed) {
-          _petals[i] = _petals[i].copyWith(
-            startX: _rng.nextDouble() * widget.containerWidth,
-          );
+          _petals[i] = _petals[i].copyWith(startX: _rng.nextDouble() * widget.containerWidth);
           _petals[i].controller.forward(from: 0);
         }
       });
@@ -79,12 +70,9 @@ class _FloatingPetalsState extends State<FloatingPetals>
     return RepaintBoundary(
       child: AnimatedBuilder(
         animation: _masterController,
-        builder: (_, __) => CustomPaint(
+        builder: (_, _) => CustomPaint(
           size: Size(widget.containerWidth, widget.containerHeight),
-          painter: _PetalsPainter(
-            petals: _petals,
-            containerHeight: widget.containerHeight,
-          ),
+          painter: _PetalsPainter(petals: _petals, containerHeight: widget.containerHeight),
         ),
       ),
     );
@@ -138,11 +126,11 @@ class _PetalsPainter extends CustomPainter {
       final alpha = t < 0.15
           ? (t / 0.15)
           : t > 0.85
-              ? ((1.0 - t) / 0.15)
-              : 1.0;
+          ? ((1.0 - t) / 0.15)
+          : 1.0;
 
       final paint = Paint()
-        ..color = petal.color.withOpacity(alpha * 0.8)
+        ..color = petal.color.withValues(alpha: alpha * 0.8)
         ..style = PaintingStyle.fill;
 
       canvas.save();

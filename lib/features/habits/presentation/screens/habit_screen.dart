@@ -12,7 +12,10 @@ import '../../../duo/cubit/duo_state.dart';
 import '../../../garden/cubit/garden_cubit.dart';
 import '../../../garden/cubit/garden_state.dart';
 import '../../../profile/cubit/profile_cubit.dart';
+import '../../../shop/cubit/shop_cubit.dart';
+import '../../../shop/cubit/shop_state.dart';
 import '../widgets/habit_card.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 class HabitScreen extends StatefulWidget {
   const HabitScreen({super.key});
@@ -27,8 +30,9 @@ class _HabitScreenState extends State<HabitScreen> {
     super.initState();
     context.read<HabitsCubit>().loadHabits();
     context.read<DuoCubit>().loadDuoData();
-    context.read<GardenCubit>().loadGarden('rose_id');
+    context.read<GardenCubit>().init();
     context.read<ProfileCubit>().loadProfile();
+    context.read<ShopCubit>().loadShop(); // Load equipped accessories for pet
   }
 
   @override
@@ -114,8 +118,8 @@ class _HeroSection extends StatelessWidget {
                       ),
                       Container(
                         padding: EdgeInsets.all(8.w),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.5), shape: BoxShape.circle),
-                        child: Icon(Icons.notifications_outlined, color: const Color(0xFFE896B0), size: 24.sp),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5), shape: BoxShape.circle),
+                        child: Icon(SolarIconsOutline.bell, color: const Color(0xFFE896B0), size: 24.sp),
                       ),
                     ],
                   ),
@@ -141,7 +145,7 @@ class _HeroSection extends StatelessWidget {
                   height: 60.h,
                   margin: EdgeInsets.symmetric(horizontal: 20.w),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF2B8CC).withOpacity(0.6),
+                    color: const Color(0xFFF2B8CC).withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(100),
                   ),
                 ),
@@ -149,55 +153,91 @@ class _HeroSection extends StatelessWidget {
             ),
           ),
 
-          // Bunnies and Plant
+          // Bunnies and Plant — Reactive to Shop accessories & Habit mood
           Positioned(
             bottom: 30.h,
             left: 0,
             right: 0,
             child: BlocBuilder<GardenCubit, GardenState>(
-              builder: (context, state) {
+              builder: (context, gardenState) {
                 String plantEmoji = '🌹';
                 String plantName = 'Our Rose';
-                if (state is GardenLoaded) {
-                  plantEmoji = state.currentPlant.emoji;
-                  plantName = state.currentPlant.name;
+                if (gardenState is GardenLoaded) {
+                  plantEmoji = gardenState.currentPlant.emoji;
+                  plantName = gardenState.currentPlant.name;
                 }
 
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const BobbingBunny(
-                      bodyColor: Colors.white,
-                      earColor: Color(0xFFFDDBE8),
-                      cheekColor: Color(0xFFFFC8DC),
-                      size: 70,
-                    ),
-                    SizedBox(width: 20.w),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(plantEmoji, style: TextStyle(fontSize: 40.sp)),
-                        SizedBox(height: 5.h),
-                        Text(
-                          plantName,
-                          style: GoogleFonts.nunito(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFFC07AD0),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(width: 20.w),
-                    const BobbingBunny(
-                      bodyColor: Color(0xFFF2E8FF),
-                      earColor: Color(0xFFE8D4FF),
-                      cheekColor: Color(0xFFD4BFFF),
-                      size: 70,
-                      mirrorX: true,
-                    ),
-                  ],
+                return BlocBuilder<ShopCubit, ShopState>(
+                  builder: (context, shopState) {
+                    // Find the equipped pet_accessory (if any)
+                    String? equippedAccessory;
+                    if (shopState is ShopLoaded) {
+                      final equipped = shopState.items.where(
+                        (i) => i.category == 'pet_accessory' && i.equipped,
+                      );
+                      if (equipped.isNotEmpty) {
+                        equippedAccessory = equipped.first.id;
+                      }
+                    }
+
+                    return BlocBuilder<HabitsCubit, HabitsState>(
+                      builder: (context, habitsState) {
+                        // Derive mood from today's completion rate
+                        String mood = 'happy';
+                        if (habitsState is HabitsLoaded) {
+                          final rate = habitsState.todayCompletionRate;
+                          if (rate >= 1.0) {
+                            mood = 'sparkly'; // All done! Celebration mode
+                          } else if (rate == 0.0) {
+                            mood = 'meh'; // Nothing done yet
+                          } else {
+                            mood = 'happy'; // Making progress
+                          }
+                        }
+
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            BobbingBunny(
+                              bodyColor: Colors.white,
+                              earColor: const Color(0xFFFDDBE8),
+                              cheekColor: const Color(0xFFFFC8DC),
+                              size: 70,
+                              mood: mood,
+                              equippedAccessory: equippedAccessory,
+                            ),
+                            SizedBox(width: 20.w),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(plantEmoji, style: TextStyle(fontSize: 40.sp)),
+                                SizedBox(height: 5.h),
+                                Text(
+                                  plantName,
+                                  style: GoogleFonts.nunito(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFC07AD0),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(width: 20.w),
+                            BobbingBunny(
+                              bodyColor: const Color(0xFFF2E8FF),
+                              earColor: const Color(0xFFE8D4FF),
+                              cheekColor: const Color(0xFFD4BFFF),
+                              size: 70,
+                              mirrorX: true,
+                              mood: mood,
+                              // Partner bunny doesn't wear accessories
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
@@ -219,7 +259,7 @@ class _StatPill extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: Colors.white.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white, width: 1.5),
       ),
@@ -247,9 +287,9 @@ class _PartnerStatusBadge extends StatelessWidget {
         return Container(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE896B0).withOpacity(0.3)),
+            border: Border.all(color: const Color(0xFFE896B0).withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -297,7 +337,11 @@ class _ProgressCard extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(22),
             boxShadow: [
-              BoxShadow(color: const Color(0xFFE896B0).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
+              BoxShadow(
+                color: const Color(0xFFE896B0).withValues(alpha: 0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
             ],
           ),
           child: Row(
@@ -311,7 +355,7 @@ class _ProgressCard extends StatelessWidget {
                     CircularProgressIndicator(
                       value: progress,
                       strokeWidth: 8,
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       valueColor: const AlwaysStoppedAnimation(Colors.white),
                       strokeCap: StrokeCap.round,
                     ),
@@ -336,7 +380,7 @@ class _ProgressCard extends StatelessWidget {
                       style: GoogleFonts.nunito(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -417,7 +461,7 @@ class _WeeklyReportCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -503,9 +547,9 @@ class _AddHabitButton extends StatelessWidget {
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: 14.h),
         decoration: BoxDecoration(
-          color: const Color(0xFFFDDBE8).withOpacity(0.3),
+          color: const Color(0xFFFDDBE8).withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE896B0).withOpacity(0.5), style: BorderStyle.solid),
+          border: Border.all(color: const Color(0xFFE896B0).withValues(alpha: 0.5), style: BorderStyle.solid),
         ),
         alignment: Alignment.center,
         child: Text(

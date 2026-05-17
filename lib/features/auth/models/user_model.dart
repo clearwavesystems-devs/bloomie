@@ -45,6 +45,8 @@ class UserModel {
     );
   }
 
+  // ── Local (SharedPreferences) ─────────────
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -75,5 +77,39 @@ class UserModel {
 
   String toJson() => json.encode(toMap());
 
-  factory UserModel.fromJson(String source) => UserModel.fromMap(json.decode(source));
+  factory UserModel.fromJson(String source) =>
+      UserModel.fromMap(json.decode(source));
+
+  // ── Supabase (cloud) ──────────────────────
+
+  /// Converts to snake_case map for Supabase `profiles` table.
+  Map<String, dynamic> toSupabaseMap() {
+    return {
+      'id': id,
+      'name': name,
+      'avatar_emoji': avatarEmoji,
+      'level': level,
+      'xp': xp,
+      'total_blooms': totalBlooms,
+      'streak_days': streakDays,
+      'joined_at': joinedAt.toIso8601String(),
+      'duo_partner_id': duoPartnerId,
+    };
+  }
+
+  /// Creates a UserModel from a Supabase row (snake_case keys).
+  factory UserModel.fromSupabase(Map<String, dynamic> map) {
+    return UserModel(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      avatarEmoji: map['avatar_emoji'] as String? ?? '🌸',
+      level: map['level'] as int? ?? 1,
+      xp: map['xp'] as int? ?? 0,
+      totalBlooms: map['total_blooms'] as int? ?? 0,
+      streakDays: map['streak_days'] as int? ?? 0,
+      joinedAt: DateTime.parse(map['joined_at'] as String),
+      duoPartnerId: map['duo_partner_id'] as String?,
+    );
+  }
 }
+

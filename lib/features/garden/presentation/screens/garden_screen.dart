@@ -3,6 +3,7 @@ import 'package:bloomie/features/garden/cubit/garden_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 class GardenScreen extends StatefulWidget {
   const GardenScreen({super.key});
@@ -37,17 +38,14 @@ class _GardenScreenState extends State<GardenScreen> {
               itemBuilder: (context, index) {
                 if (index < state.history.length) {
                   final plant = state.history[index];
-                  return _PlantCard(
-                    emoji: plant.emoji,
-                    name: plant.name,
-                    growth: plant.growthPercent,
-                    isLocked: false,
-                  );
+                  return _PlantCard(emoji: plant.emoji, name: plant.name, growth: plant.growthPercent, isLocked: false);
                 }
                 return const _PlantCard(emoji: '🌻', name: 'Sunflower', growth: 0, isLocked: true);
               },
             );
           } else if (state is GardenError) {
+            debugPrint('GardenError: ${state.message}');
+            debugPrint('GardenError: ${StackTrace.current.toString()}');
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -62,10 +60,7 @@ class _GardenScreenState extends State<GardenScreen> {
                       style: const TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () => context.read<GardenCubit>().init(),
-                      child: const Text('Retry'),
-                    ),
+                    ElevatedButton(onPressed: () => context.read<GardenCubit>().init(), child: const Text('Retry')),
                   ],
                 ),
               ),
@@ -91,7 +86,7 @@ class _PlantCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -99,8 +94,8 @@ class _PlantCard extends StatelessWidget {
           Stack(
             alignment: Alignment.center,
             children: [
-              Text(emoji, style: TextStyle(fontSize: 48, color: isLocked ? Colors.grey.withOpacity(0.3) : null)),
-              if (isLocked) const Icon(Icons.lock_outline, color: Colors.grey),
+              Text(emoji, style: TextStyle(fontSize: 48, color: isLocked ? Colors.grey.withValues(alpha: 0.3) : null)),
+              if (isLocked) const Icon(SolarIconsOutline.lock, color: Colors.grey),
             ],
           ),
           const SizedBox(height: 12),

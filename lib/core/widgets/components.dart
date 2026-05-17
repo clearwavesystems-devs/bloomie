@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 // ── Common Widgets ───────────────────────────────────────────────────────────
 
@@ -10,7 +11,7 @@ class EmptyStateWidget extends StatelessWidget {
   const EmptyStateWidget({
     super.key,
     required this.message,
-    this.icon = Icons.inbox,
+    this.icon = SolarIconsOutline.inbox,
     this.onRetry,
   });
 
@@ -62,7 +63,7 @@ class ErrorWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.error_outline,
+              SolarIconsOutline.danger,
               size: 64,
               color: Theme.of(context).colorScheme.error,
             ),

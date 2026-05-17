@@ -6,21 +6,16 @@ class PartnerBadge extends StatelessWidget {
   final bool isOnline;
   final String statusText;
 
-  const PartnerBadge({
-    super.key,
-    required this.partnerName,
-    this.isOnline = true,
-    required this.statusText,
-  });
+  const PartnerBadge({super.key, required this.partnerName, this.isOnline = true, required this.statusText});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
+        color: Colors.white.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primaryPink.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primaryPink.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -31,9 +26,9 @@ class PartnerBadge extends StatelessWidget {
             decoration: BoxDecoration(
               color: isOnline ? Colors.green : Colors.grey,
               shape: BoxShape.circle,
-              boxShadow: isOnline 
-                ? [BoxShadow(color: Colors.green.withOpacity(0.4), blurRadius: 4, spreadRadius: 2)]
-                : [],
+              boxShadow: isOnline
+                  ? [BoxShadow(color: Colors.green.withValues(alpha: 0.4), blurRadius: 4, spreadRadius: 2)]
+                  : [],
             ),
           ),
           const SizedBox(width: 8),

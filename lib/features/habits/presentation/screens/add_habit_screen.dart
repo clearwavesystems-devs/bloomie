@@ -60,7 +60,9 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: _selectedEmoji == e ? AppColors.primaryPink.withOpacity(0.2) : Colors.transparent,
+                          color: _selectedEmoji == e
+                              ? AppColors.primaryPink.withValues(alpha: 0.2)
+                              : Colors.transparent,
                           shape: BoxShape.circle,
                         ),
                         child: Text(e, style: const TextStyle(fontSize: 24)),
@@ -141,6 +143,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                       targetCount: _targetCount,
                       streakCount: 0,
                       longestStreak: 0,
+                      xpReward: 50,
                     );
                     context.read<HabitsCubit>().addHabit(habit);
                     Navigator.pop(context);

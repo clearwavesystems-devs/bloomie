@@ -127,6 +127,18 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _lastCompletedAtMeta = const VerificationMeta(
+    'lastCompletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastCompletedAt =
+      GeneratedColumn<DateTime>(
+        'last_completed_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -177,6 +189,18 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _xpRewardMeta = const VerificationMeta(
+    'xpReward',
+  );
+  @override
+  late final GeneratedColumn<int> xpReward = GeneratedColumn<int>(
+    'xp_reward',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(50),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -190,10 +214,12 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     reminderTime,
     streakCount,
     longestStreak,
+    lastCompletedAt,
     createdAt,
     isSharedWithPartner,
     iconBg,
     isArchived,
+    xpReward,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -297,6 +323,15 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
         ),
       );
     }
+    if (data.containsKey('last_completed_at')) {
+      context.handle(
+        _lastCompletedAtMeta,
+        lastCompletedAt.isAcceptableOrUnknown(
+          data['last_completed_at']!,
+          _lastCompletedAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -324,6 +359,12 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
       context.handle(
         _isArchivedMeta,
         isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    if (data.containsKey('xp_reward')) {
+      context.handle(
+        _xpRewardMeta,
+        xpReward.isAcceptableOrUnknown(data['xp_reward']!, _xpRewardMeta),
       );
     }
     return context;
@@ -379,6 +420,10 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
         DriftSqlType.int,
         data['${effectivePrefix}longest_streak'],
       )!,
+      lastCompletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_completed_at'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -394,6 +439,10 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
       isArchived: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_archived'],
+      )!,
+      xpReward: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}xp_reward'],
       )!,
     );
   }
@@ -416,10 +465,12 @@ class Habit extends DataClass implements Insertable<Habit> {
   final DateTime? reminderTime;
   final int streakCount;
   final int longestStreak;
+  final DateTime? lastCompletedAt;
   final DateTime createdAt;
   final bool isSharedWithPartner;
   final int iconBg;
   final bool isArchived;
+  final int xpReward;
   const Habit({
     required this.id,
     required this.name,
@@ -432,10 +483,12 @@ class Habit extends DataClass implements Insertable<Habit> {
     this.reminderTime,
     required this.streakCount,
     required this.longestStreak,
+    this.lastCompletedAt,
     required this.createdAt,
     required this.isSharedWithPartner,
     required this.iconBg,
     required this.isArchived,
+    required this.xpReward,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -453,10 +506,14 @@ class Habit extends DataClass implements Insertable<Habit> {
     }
     map['streak_count'] = Variable<int>(streakCount);
     map['longest_streak'] = Variable<int>(longestStreak);
+    if (!nullToAbsent || lastCompletedAt != null) {
+      map['last_completed_at'] = Variable<DateTime>(lastCompletedAt);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['is_shared_with_partner'] = Variable<bool>(isSharedWithPartner);
     map['icon_bg'] = Variable<int>(iconBg);
     map['is_archived'] = Variable<bool>(isArchived);
+    map['xp_reward'] = Variable<int>(xpReward);
     return map;
   }
 
@@ -475,10 +532,14 @@ class Habit extends DataClass implements Insertable<Habit> {
           : Value(reminderTime),
       streakCount: Value(streakCount),
       longestStreak: Value(longestStreak),
+      lastCompletedAt: lastCompletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastCompletedAt),
       createdAt: Value(createdAt),
       isSharedWithPartner: Value(isSharedWithPartner),
       iconBg: Value(iconBg),
       isArchived: Value(isArchived),
+      xpReward: Value(xpReward),
     );
   }
 
@@ -499,12 +560,14 @@ class Habit extends DataClass implements Insertable<Habit> {
       reminderTime: serializer.fromJson<DateTime?>(json['reminderTime']),
       streakCount: serializer.fromJson<int>(json['streakCount']),
       longestStreak: serializer.fromJson<int>(json['longestStreak']),
+      lastCompletedAt: serializer.fromJson<DateTime?>(json['lastCompletedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       isSharedWithPartner: serializer.fromJson<bool>(
         json['isSharedWithPartner'],
       ),
       iconBg: serializer.fromJson<int>(json['iconBg']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
+      xpReward: serializer.fromJson<int>(json['xpReward']),
     );
   }
   @override
@@ -522,10 +585,12 @@ class Habit extends DataClass implements Insertable<Habit> {
       'reminderTime': serializer.toJson<DateTime?>(reminderTime),
       'streakCount': serializer.toJson<int>(streakCount),
       'longestStreak': serializer.toJson<int>(longestStreak),
+      'lastCompletedAt': serializer.toJson<DateTime?>(lastCompletedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'isSharedWithPartner': serializer.toJson<bool>(isSharedWithPartner),
       'iconBg': serializer.toJson<int>(iconBg),
       'isArchived': serializer.toJson<bool>(isArchived),
+      'xpReward': serializer.toJson<int>(xpReward),
     };
   }
 
@@ -541,10 +606,12 @@ class Habit extends DataClass implements Insertable<Habit> {
     Value<DateTime?> reminderTime = const Value.absent(),
     int? streakCount,
     int? longestStreak,
+    Value<DateTime?> lastCompletedAt = const Value.absent(),
     DateTime? createdAt,
     bool? isSharedWithPartner,
     int? iconBg,
     bool? isArchived,
+    int? xpReward,
   }) => Habit(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -557,10 +624,14 @@ class Habit extends DataClass implements Insertable<Habit> {
     reminderTime: reminderTime.present ? reminderTime.value : this.reminderTime,
     streakCount: streakCount ?? this.streakCount,
     longestStreak: longestStreak ?? this.longestStreak,
+    lastCompletedAt: lastCompletedAt.present
+        ? lastCompletedAt.value
+        : this.lastCompletedAt,
     createdAt: createdAt ?? this.createdAt,
     isSharedWithPartner: isSharedWithPartner ?? this.isSharedWithPartner,
     iconBg: iconBg ?? this.iconBg,
     isArchived: isArchived ?? this.isArchived,
+    xpReward: xpReward ?? this.xpReward,
   );
   Habit copyWithCompanion(HabitsCompanion data) {
     return Habit(
@@ -587,6 +658,9 @@ class Habit extends DataClass implements Insertable<Habit> {
       longestStreak: data.longestStreak.present
           ? data.longestStreak.value
           : this.longestStreak,
+      lastCompletedAt: data.lastCompletedAt.present
+          ? data.lastCompletedAt.value
+          : this.lastCompletedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       isSharedWithPartner: data.isSharedWithPartner.present
           ? data.isSharedWithPartner.value
@@ -595,6 +669,7 @@ class Habit extends DataClass implements Insertable<Habit> {
       isArchived: data.isArchived.present
           ? data.isArchived.value
           : this.isArchived,
+      xpReward: data.xpReward.present ? data.xpReward.value : this.xpReward,
     );
   }
 
@@ -612,10 +687,12 @@ class Habit extends DataClass implements Insertable<Habit> {
           ..write('reminderTime: $reminderTime, ')
           ..write('streakCount: $streakCount, ')
           ..write('longestStreak: $longestStreak, ')
+          ..write('lastCompletedAt: $lastCompletedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('isSharedWithPartner: $isSharedWithPartner, ')
           ..write('iconBg: $iconBg, ')
-          ..write('isArchived: $isArchived')
+          ..write('isArchived: $isArchived, ')
+          ..write('xpReward: $xpReward')
           ..write(')'))
         .toString();
   }
@@ -633,10 +710,12 @@ class Habit extends DataClass implements Insertable<Habit> {
     reminderTime,
     streakCount,
     longestStreak,
+    lastCompletedAt,
     createdAt,
     isSharedWithPartner,
     iconBg,
     isArchived,
+    xpReward,
   );
   @override
   bool operator ==(Object other) =>
@@ -653,10 +732,12 @@ class Habit extends DataClass implements Insertable<Habit> {
           other.reminderTime == this.reminderTime &&
           other.streakCount == this.streakCount &&
           other.longestStreak == this.longestStreak &&
+          other.lastCompletedAt == this.lastCompletedAt &&
           other.createdAt == this.createdAt &&
           other.isSharedWithPartner == this.isSharedWithPartner &&
           other.iconBg == this.iconBg &&
-          other.isArchived == this.isArchived);
+          other.isArchived == this.isArchived &&
+          other.xpReward == this.xpReward);
 }
 
 class HabitsCompanion extends UpdateCompanion<Habit> {
@@ -671,10 +752,12 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
   final Value<DateTime?> reminderTime;
   final Value<int> streakCount;
   final Value<int> longestStreak;
+  final Value<DateTime?> lastCompletedAt;
   final Value<DateTime> createdAt;
   final Value<bool> isSharedWithPartner;
   final Value<int> iconBg;
   final Value<bool> isArchived;
+  final Value<int> xpReward;
   final Value<int> rowid;
   const HabitsCompanion({
     this.id = const Value.absent(),
@@ -688,10 +771,12 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     this.reminderTime = const Value.absent(),
     this.streakCount = const Value.absent(),
     this.longestStreak = const Value.absent(),
+    this.lastCompletedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.isSharedWithPartner = const Value.absent(),
     this.iconBg = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.xpReward = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HabitsCompanion.insert({
@@ -706,10 +791,12 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     this.reminderTime = const Value.absent(),
     this.streakCount = const Value.absent(),
     this.longestStreak = const Value.absent(),
+    this.lastCompletedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.isSharedWithPartner = const Value.absent(),
     required int iconBg,
     this.isArchived = const Value.absent(),
+    this.xpReward = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -730,10 +817,12 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     Expression<DateTime>? reminderTime,
     Expression<int>? streakCount,
     Expression<int>? longestStreak,
+    Expression<DateTime>? lastCompletedAt,
     Expression<DateTime>? createdAt,
     Expression<bool>? isSharedWithPartner,
     Expression<int>? iconBg,
     Expression<bool>? isArchived,
+    Expression<int>? xpReward,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -748,11 +837,13 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
       if (reminderTime != null) 'reminder_time': reminderTime,
       if (streakCount != null) 'streak_count': streakCount,
       if (longestStreak != null) 'longest_streak': longestStreak,
+      if (lastCompletedAt != null) 'last_completed_at': lastCompletedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (isSharedWithPartner != null)
         'is_shared_with_partner': isSharedWithPartner,
       if (iconBg != null) 'icon_bg': iconBg,
       if (isArchived != null) 'is_archived': isArchived,
+      if (xpReward != null) 'xp_reward': xpReward,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -769,10 +860,12 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     Value<DateTime?>? reminderTime,
     Value<int>? streakCount,
     Value<int>? longestStreak,
+    Value<DateTime?>? lastCompletedAt,
     Value<DateTime>? createdAt,
     Value<bool>? isSharedWithPartner,
     Value<int>? iconBg,
     Value<bool>? isArchived,
+    Value<int>? xpReward,
     Value<int>? rowid,
   }) {
     return HabitsCompanion(
@@ -787,10 +880,12 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
       reminderTime: reminderTime ?? this.reminderTime,
       streakCount: streakCount ?? this.streakCount,
       longestStreak: longestStreak ?? this.longestStreak,
+      lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
       createdAt: createdAt ?? this.createdAt,
       isSharedWithPartner: isSharedWithPartner ?? this.isSharedWithPartner,
       iconBg: iconBg ?? this.iconBg,
       isArchived: isArchived ?? this.isArchived,
+      xpReward: xpReward ?? this.xpReward,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -831,6 +926,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     if (longestStreak.present) {
       map['longest_streak'] = Variable<int>(longestStreak.value);
     }
+    if (lastCompletedAt.present) {
+      map['last_completed_at'] = Variable<DateTime>(lastCompletedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -842,6 +940,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     }
     if (isArchived.present) {
       map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (xpReward.present) {
+      map['xp_reward'] = Variable<int>(xpReward.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -863,10 +964,12 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
           ..write('reminderTime: $reminderTime, ')
           ..write('streakCount: $streakCount, ')
           ..write('longestStreak: $longestStreak, ')
+          ..write('lastCompletedAt: $lastCompletedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('isSharedWithPartner: $isSharedWithPartner, ')
           ..write('iconBg: $iconBg, ')
           ..write('isArchived: $isArchived, ')
+          ..write('xpReward: $xpReward, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1759,12 +1862,24 @@ class $PlantsTable extends Plants with TableInfo<$PlantsTable, Plant> {
   late final GeneratedColumn<String> duoSessionId = GeneratedColumn<String>(
     'duo_session_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES duo_sessions (id)',
     ),
+  );
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('me'),
   );
   static const VerificationMeta _waterCountMeta = const VerificationMeta(
     'waterCount',
@@ -1809,6 +1924,7 @@ class $PlantsTable extends Plants with TableInfo<$PlantsTable, Plant> {
     stage,
     growthPercent,
     duoSessionId,
+    ownerId,
     waterCount,
     lastWateredAt,
     unlockedAt,
@@ -1871,8 +1987,12 @@ class $PlantsTable extends Plants with TableInfo<$PlantsTable, Plant> {
           _duoSessionIdMeta,
         ),
       );
-    } else if (isInserting) {
-      context.missing(_duoSessionIdMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
     }
     if (data.containsKey('water_count')) {
       context.handle(
@@ -1927,6 +2047,10 @@ class $PlantsTable extends Plants with TableInfo<$PlantsTable, Plant> {
       duoSessionId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}duo_session_id'],
+      ),
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
       )!,
       waterCount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -1955,7 +2079,8 @@ class Plant extends DataClass implements Insertable<Plant> {
   final String emoji;
   final int stage;
   final double growthPercent;
-  final String duoSessionId;
+  final String? duoSessionId;
+  final String ownerId;
   final int waterCount;
   final DateTime? lastWateredAt;
   final DateTime? unlockedAt;
@@ -1965,7 +2090,8 @@ class Plant extends DataClass implements Insertable<Plant> {
     required this.emoji,
     required this.stage,
     required this.growthPercent,
-    required this.duoSessionId,
+    this.duoSessionId,
+    required this.ownerId,
     required this.waterCount,
     this.lastWateredAt,
     this.unlockedAt,
@@ -1978,7 +2104,10 @@ class Plant extends DataClass implements Insertable<Plant> {
     map['emoji'] = Variable<String>(emoji);
     map['stage'] = Variable<int>(stage);
     map['growth_percent'] = Variable<double>(growthPercent);
-    map['duo_session_id'] = Variable<String>(duoSessionId);
+    if (!nullToAbsent || duoSessionId != null) {
+      map['duo_session_id'] = Variable<String>(duoSessionId);
+    }
+    map['owner_id'] = Variable<String>(ownerId);
     map['water_count'] = Variable<int>(waterCount);
     if (!nullToAbsent || lastWateredAt != null) {
       map['last_watered_at'] = Variable<DateTime>(lastWateredAt);
@@ -1996,7 +2125,10 @@ class Plant extends DataClass implements Insertable<Plant> {
       emoji: Value(emoji),
       stage: Value(stage),
       growthPercent: Value(growthPercent),
-      duoSessionId: Value(duoSessionId),
+      duoSessionId: duoSessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(duoSessionId),
+      ownerId: Value(ownerId),
       waterCount: Value(waterCount),
       lastWateredAt: lastWateredAt == null && nullToAbsent
           ? const Value.absent()
@@ -2018,7 +2150,8 @@ class Plant extends DataClass implements Insertable<Plant> {
       emoji: serializer.fromJson<String>(json['emoji']),
       stage: serializer.fromJson<int>(json['stage']),
       growthPercent: serializer.fromJson<double>(json['growthPercent']),
-      duoSessionId: serializer.fromJson<String>(json['duoSessionId']),
+      duoSessionId: serializer.fromJson<String?>(json['duoSessionId']),
+      ownerId: serializer.fromJson<String>(json['ownerId']),
       waterCount: serializer.fromJson<int>(json['waterCount']),
       lastWateredAt: serializer.fromJson<DateTime?>(json['lastWateredAt']),
       unlockedAt: serializer.fromJson<DateTime?>(json['unlockedAt']),
@@ -2033,7 +2166,8 @@ class Plant extends DataClass implements Insertable<Plant> {
       'emoji': serializer.toJson<String>(emoji),
       'stage': serializer.toJson<int>(stage),
       'growthPercent': serializer.toJson<double>(growthPercent),
-      'duoSessionId': serializer.toJson<String>(duoSessionId),
+      'duoSessionId': serializer.toJson<String?>(duoSessionId),
+      'ownerId': serializer.toJson<String>(ownerId),
       'waterCount': serializer.toJson<int>(waterCount),
       'lastWateredAt': serializer.toJson<DateTime?>(lastWateredAt),
       'unlockedAt': serializer.toJson<DateTime?>(unlockedAt),
@@ -2046,7 +2180,8 @@ class Plant extends DataClass implements Insertable<Plant> {
     String? emoji,
     int? stage,
     double? growthPercent,
-    String? duoSessionId,
+    Value<String?> duoSessionId = const Value.absent(),
+    String? ownerId,
     int? waterCount,
     Value<DateTime?> lastWateredAt = const Value.absent(),
     Value<DateTime?> unlockedAt = const Value.absent(),
@@ -2056,7 +2191,8 @@ class Plant extends DataClass implements Insertable<Plant> {
     emoji: emoji ?? this.emoji,
     stage: stage ?? this.stage,
     growthPercent: growthPercent ?? this.growthPercent,
-    duoSessionId: duoSessionId ?? this.duoSessionId,
+    duoSessionId: duoSessionId.present ? duoSessionId.value : this.duoSessionId,
+    ownerId: ownerId ?? this.ownerId,
     waterCount: waterCount ?? this.waterCount,
     lastWateredAt: lastWateredAt.present
         ? lastWateredAt.value
@@ -2075,6 +2211,7 @@ class Plant extends DataClass implements Insertable<Plant> {
       duoSessionId: data.duoSessionId.present
           ? data.duoSessionId.value
           : this.duoSessionId,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
       waterCount: data.waterCount.present
           ? data.waterCount.value
           : this.waterCount,
@@ -2096,6 +2233,7 @@ class Plant extends DataClass implements Insertable<Plant> {
           ..write('stage: $stage, ')
           ..write('growthPercent: $growthPercent, ')
           ..write('duoSessionId: $duoSessionId, ')
+          ..write('ownerId: $ownerId, ')
           ..write('waterCount: $waterCount, ')
           ..write('lastWateredAt: $lastWateredAt, ')
           ..write('unlockedAt: $unlockedAt')
@@ -2111,6 +2249,7 @@ class Plant extends DataClass implements Insertable<Plant> {
     stage,
     growthPercent,
     duoSessionId,
+    ownerId,
     waterCount,
     lastWateredAt,
     unlockedAt,
@@ -2125,6 +2264,7 @@ class Plant extends DataClass implements Insertable<Plant> {
           other.stage == this.stage &&
           other.growthPercent == this.growthPercent &&
           other.duoSessionId == this.duoSessionId &&
+          other.ownerId == this.ownerId &&
           other.waterCount == this.waterCount &&
           other.lastWateredAt == this.lastWateredAt &&
           other.unlockedAt == this.unlockedAt);
@@ -2136,7 +2276,8 @@ class PlantsCompanion extends UpdateCompanion<Plant> {
   final Value<String> emoji;
   final Value<int> stage;
   final Value<double> growthPercent;
-  final Value<String> duoSessionId;
+  final Value<String?> duoSessionId;
+  final Value<String> ownerId;
   final Value<int> waterCount;
   final Value<DateTime?> lastWateredAt;
   final Value<DateTime?> unlockedAt;
@@ -2148,6 +2289,7 @@ class PlantsCompanion extends UpdateCompanion<Plant> {
     this.stage = const Value.absent(),
     this.growthPercent = const Value.absent(),
     this.duoSessionId = const Value.absent(),
+    this.ownerId = const Value.absent(),
     this.waterCount = const Value.absent(),
     this.lastWateredAt = const Value.absent(),
     this.unlockedAt = const Value.absent(),
@@ -2159,7 +2301,8 @@ class PlantsCompanion extends UpdateCompanion<Plant> {
     required String emoji,
     required int stage,
     this.growthPercent = const Value.absent(),
-    required String duoSessionId,
+    this.duoSessionId = const Value.absent(),
+    this.ownerId = const Value.absent(),
     this.waterCount = const Value.absent(),
     this.lastWateredAt = const Value.absent(),
     this.unlockedAt = const Value.absent(),
@@ -2167,8 +2310,7 @@ class PlantsCompanion extends UpdateCompanion<Plant> {
   }) : id = Value(id),
        name = Value(name),
        emoji = Value(emoji),
-       stage = Value(stage),
-       duoSessionId = Value(duoSessionId);
+       stage = Value(stage);
   static Insertable<Plant> custom({
     Expression<String>? id,
     Expression<String>? name,
@@ -2176,6 +2318,7 @@ class PlantsCompanion extends UpdateCompanion<Plant> {
     Expression<int>? stage,
     Expression<double>? growthPercent,
     Expression<String>? duoSessionId,
+    Expression<String>? ownerId,
     Expression<int>? waterCount,
     Expression<DateTime>? lastWateredAt,
     Expression<DateTime>? unlockedAt,
@@ -2188,6 +2331,7 @@ class PlantsCompanion extends UpdateCompanion<Plant> {
       if (stage != null) 'stage': stage,
       if (growthPercent != null) 'growth_percent': growthPercent,
       if (duoSessionId != null) 'duo_session_id': duoSessionId,
+      if (ownerId != null) 'owner_id': ownerId,
       if (waterCount != null) 'water_count': waterCount,
       if (lastWateredAt != null) 'last_watered_at': lastWateredAt,
       if (unlockedAt != null) 'unlocked_at': unlockedAt,
@@ -2201,7 +2345,8 @@ class PlantsCompanion extends UpdateCompanion<Plant> {
     Value<String>? emoji,
     Value<int>? stage,
     Value<double>? growthPercent,
-    Value<String>? duoSessionId,
+    Value<String?>? duoSessionId,
+    Value<String>? ownerId,
     Value<int>? waterCount,
     Value<DateTime?>? lastWateredAt,
     Value<DateTime?>? unlockedAt,
@@ -2214,6 +2359,7 @@ class PlantsCompanion extends UpdateCompanion<Plant> {
       stage: stage ?? this.stage,
       growthPercent: growthPercent ?? this.growthPercent,
       duoSessionId: duoSessionId ?? this.duoSessionId,
+      ownerId: ownerId ?? this.ownerId,
       waterCount: waterCount ?? this.waterCount,
       lastWateredAt: lastWateredAt ?? this.lastWateredAt,
       unlockedAt: unlockedAt ?? this.unlockedAt,
@@ -2242,6 +2388,9 @@ class PlantsCompanion extends UpdateCompanion<Plant> {
     if (duoSessionId.present) {
       map['duo_session_id'] = Variable<String>(duoSessionId.value);
     }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
     if (waterCount.present) {
       map['water_count'] = Variable<int>(waterCount.value);
     }
@@ -2266,9 +2415,1910 @@ class PlantsCompanion extends UpdateCompanion<Plant> {
           ..write('stage: $stage, ')
           ..write('growthPercent: $growthPercent, ')
           ..write('duoSessionId: $duoSessionId, ')
+          ..write('ownerId: $ownerId, ')
           ..write('waterCount: $waterCount, ')
           ..write('lastWateredAt: $lastWateredAt, ')
           ..write('unlockedAt: $unlockedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TasksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _xpRewardMeta = const VerificationMeta(
+    'xpReward',
+  );
+  @override
+  late final GeneratedColumn<int> xpReward = GeneratedColumn<int>(
+    'xp_reward',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(20),
+  );
+  static const VerificationMeta _bloomRewardMeta = const VerificationMeta(
+    'bloomReward',
+  );
+  @override
+  late final GeneratedColumn<int> bloomReward = GeneratedColumn<int>(
+    'bloom_reward',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(5),
+  );
+  static const VerificationMeta _completedMeta = const VerificationMeta(
+    'completed',
+  );
+  @override
+  late final GeneratedColumn<bool> completed = GeneratedColumn<bool>(
+    'completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("completed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _dueAtMeta = const VerificationMeta('dueAt');
+  @override
+  late final GeneratedColumn<DateTime> dueAt = GeneratedColumn<DateTime>(
+    'due_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _estimatedMinutesMeta = const VerificationMeta(
+    'estimatedMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> estimatedMinutes = GeneratedColumn<int>(
+    'estimated_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    description,
+    xpReward,
+    bloomReward,
+    completed,
+    dueAt,
+    completedAt,
+    createdAt,
+    estimatedMinutes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tasks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Task> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('xp_reward')) {
+      context.handle(
+        _xpRewardMeta,
+        xpReward.isAcceptableOrUnknown(data['xp_reward']!, _xpRewardMeta),
+      );
+    }
+    if (data.containsKey('bloom_reward')) {
+      context.handle(
+        _bloomRewardMeta,
+        bloomReward.isAcceptableOrUnknown(
+          data['bloom_reward']!,
+          _bloomRewardMeta,
+        ),
+      );
+    }
+    if (data.containsKey('completed')) {
+      context.handle(
+        _completedMeta,
+        completed.isAcceptableOrUnknown(data['completed']!, _completedMeta),
+      );
+    }
+    if (data.containsKey('due_at')) {
+      context.handle(
+        _dueAtMeta,
+        dueAt.isAcceptableOrUnknown(data['due_at']!, _dueAtMeta),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('estimated_minutes')) {
+      context.handle(
+        _estimatedMinutesMeta,
+        estimatedMinutes.isAcceptableOrUnknown(
+          data['estimated_minutes']!,
+          _estimatedMinutesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Task map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Task(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      xpReward: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}xp_reward'],
+      )!,
+      bloomReward: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bloom_reward'],
+      )!,
+      completed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}completed'],
+      )!,
+      dueAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}due_at'],
+      ),
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      estimatedMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}estimated_minutes'],
+      ),
+    );
+  }
+
+  @override
+  $TasksTable createAlias(String alias) {
+    return $TasksTable(attachedDatabase, alias);
+  }
+}
+
+class Task extends DataClass implements Insertable<Task> {
+  final String id;
+  final String title;
+  final String? description;
+  final int xpReward;
+  final int bloomReward;
+  final bool completed;
+  final DateTime? dueAt;
+  final DateTime? completedAt;
+  final DateTime createdAt;
+  final int? estimatedMinutes;
+  const Task({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.xpReward,
+    required this.bloomReward,
+    required this.completed,
+    this.dueAt,
+    this.completedAt,
+    required this.createdAt,
+    this.estimatedMinutes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['xp_reward'] = Variable<int>(xpReward);
+    map['bloom_reward'] = Variable<int>(bloomReward);
+    map['completed'] = Variable<bool>(completed);
+    if (!nullToAbsent || dueAt != null) {
+      map['due_at'] = Variable<DateTime>(dueAt);
+    }
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || estimatedMinutes != null) {
+      map['estimated_minutes'] = Variable<int>(estimatedMinutes);
+    }
+    return map;
+  }
+
+  TasksCompanion toCompanion(bool nullToAbsent) {
+    return TasksCompanion(
+      id: Value(id),
+      title: Value(title),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      xpReward: Value(xpReward),
+      bloomReward: Value(bloomReward),
+      completed: Value(completed),
+      dueAt: dueAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+      createdAt: Value(createdAt),
+      estimatedMinutes: estimatedMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(estimatedMinutes),
+    );
+  }
+
+  factory Task.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Task(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String?>(json['description']),
+      xpReward: serializer.fromJson<int>(json['xpReward']),
+      bloomReward: serializer.fromJson<int>(json['bloomReward']),
+      completed: serializer.fromJson<bool>(json['completed']),
+      dueAt: serializer.fromJson<DateTime?>(json['dueAt']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      estimatedMinutes: serializer.fromJson<int?>(json['estimatedMinutes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String?>(description),
+      'xpReward': serializer.toJson<int>(xpReward),
+      'bloomReward': serializer.toJson<int>(bloomReward),
+      'completed': serializer.toJson<bool>(completed),
+      'dueAt': serializer.toJson<DateTime?>(dueAt),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'estimatedMinutes': serializer.toJson<int?>(estimatedMinutes),
+    };
+  }
+
+  Task copyWith({
+    String? id,
+    String? title,
+    Value<String?> description = const Value.absent(),
+    int? xpReward,
+    int? bloomReward,
+    bool? completed,
+    Value<DateTime?> dueAt = const Value.absent(),
+    Value<DateTime?> completedAt = const Value.absent(),
+    DateTime? createdAt,
+    Value<int?> estimatedMinutes = const Value.absent(),
+  }) => Task(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    description: description.present ? description.value : this.description,
+    xpReward: xpReward ?? this.xpReward,
+    bloomReward: bloomReward ?? this.bloomReward,
+    completed: completed ?? this.completed,
+    dueAt: dueAt.present ? dueAt.value : this.dueAt,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    createdAt: createdAt ?? this.createdAt,
+    estimatedMinutes: estimatedMinutes.present
+        ? estimatedMinutes.value
+        : this.estimatedMinutes,
+  );
+  Task copyWithCompanion(TasksCompanion data) {
+    return Task(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      xpReward: data.xpReward.present ? data.xpReward.value : this.xpReward,
+      bloomReward: data.bloomReward.present
+          ? data.bloomReward.value
+          : this.bloomReward,
+      completed: data.completed.present ? data.completed.value : this.completed,
+      dueAt: data.dueAt.present ? data.dueAt.value : this.dueAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      estimatedMinutes: data.estimatedMinutes.present
+          ? data.estimatedMinutes.value
+          : this.estimatedMinutes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Task(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('xpReward: $xpReward, ')
+          ..write('bloomReward: $bloomReward, ')
+          ..write('completed: $completed, ')
+          ..write('dueAt: $dueAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('estimatedMinutes: $estimatedMinutes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    description,
+    xpReward,
+    bloomReward,
+    completed,
+    dueAt,
+    completedAt,
+    createdAt,
+    estimatedMinutes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Task &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.xpReward == this.xpReward &&
+          other.bloomReward == this.bloomReward &&
+          other.completed == this.completed &&
+          other.dueAt == this.dueAt &&
+          other.completedAt == this.completedAt &&
+          other.createdAt == this.createdAt &&
+          other.estimatedMinutes == this.estimatedMinutes);
+}
+
+class TasksCompanion extends UpdateCompanion<Task> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String?> description;
+  final Value<int> xpReward;
+  final Value<int> bloomReward;
+  final Value<bool> completed;
+  final Value<DateTime?> dueAt;
+  final Value<DateTime?> completedAt;
+  final Value<DateTime> createdAt;
+  final Value<int?> estimatedMinutes;
+  final Value<int> rowid;
+  const TasksCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.xpReward = const Value.absent(),
+    this.bloomReward = const Value.absent(),
+    this.completed = const Value.absent(),
+    this.dueAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.estimatedMinutes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TasksCompanion.insert({
+    required String id,
+    required String title,
+    this.description = const Value.absent(),
+    this.xpReward = const Value.absent(),
+    this.bloomReward = const Value.absent(),
+    this.completed = const Value.absent(),
+    this.dueAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.estimatedMinutes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title);
+  static Insertable<Task> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<int>? xpReward,
+    Expression<int>? bloomReward,
+    Expression<bool>? completed,
+    Expression<DateTime>? dueAt,
+    Expression<DateTime>? completedAt,
+    Expression<DateTime>? createdAt,
+    Expression<int>? estimatedMinutes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (xpReward != null) 'xp_reward': xpReward,
+      if (bloomReward != null) 'bloom_reward': bloomReward,
+      if (completed != null) 'completed': completed,
+      if (dueAt != null) 'due_at': dueAt,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (estimatedMinutes != null) 'estimated_minutes': estimatedMinutes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TasksCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String?>? description,
+    Value<int>? xpReward,
+    Value<int>? bloomReward,
+    Value<bool>? completed,
+    Value<DateTime?>? dueAt,
+    Value<DateTime?>? completedAt,
+    Value<DateTime>? createdAt,
+    Value<int?>? estimatedMinutes,
+    Value<int>? rowid,
+  }) {
+    return TasksCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      xpReward: xpReward ?? this.xpReward,
+      bloomReward: bloomReward ?? this.bloomReward,
+      completed: completed ?? this.completed,
+      dueAt: dueAt ?? this.dueAt,
+      completedAt: completedAt ?? this.completedAt,
+      createdAt: createdAt ?? this.createdAt,
+      estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (xpReward.present) {
+      map['xp_reward'] = Variable<int>(xpReward.value);
+    }
+    if (bloomReward.present) {
+      map['bloom_reward'] = Variable<int>(bloomReward.value);
+    }
+    if (completed.present) {
+      map['completed'] = Variable<bool>(completed.value);
+    }
+    if (dueAt.present) {
+      map['due_at'] = Variable<DateTime>(dueAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (estimatedMinutes.present) {
+      map['estimated_minutes'] = Variable<int>(estimatedMinutes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TasksCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('xpReward: $xpReward, ')
+          ..write('bloomReward: $bloomReward, ')
+          ..write('completed: $completed, ')
+          ..write('dueAt: $dueAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('estimatedMinutes: $estimatedMinutes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $JournalEntriesTable extends JournalEntries
+    with TableInfo<$JournalEntriesTable, JournalEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $JournalEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _moodMeta = const VerificationMeta('mood');
+  @override
+  late final GeneratedColumn<String> mood = GeneratedColumn<String>(
+    'mood',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _moodScoreMeta = const VerificationMeta(
+    'moodScore',
+  );
+  @override
+  late final GeneratedColumn<int> moodScore = GeneratedColumn<int>(
+    'mood_score',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(3),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    content,
+    mood,
+    moodScore,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'journal_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<JournalEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('mood')) {
+      context.handle(
+        _moodMeta,
+        mood.isAcceptableOrUnknown(data['mood']!, _moodMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_moodMeta);
+    }
+    if (data.containsKey('mood_score')) {
+      context.handle(
+        _moodScoreMeta,
+        moodScore.isAcceptableOrUnknown(data['mood_score']!, _moodScoreMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  JournalEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return JournalEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      mood: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mood'],
+      )!,
+      moodScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}mood_score'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $JournalEntriesTable createAlias(String alias) {
+    return $JournalEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class JournalEntry extends DataClass implements Insertable<JournalEntry> {
+  final String id;
+  final String content;
+  final String mood;
+  final int moodScore;
+  final DateTime createdAt;
+  const JournalEntry({
+    required this.id,
+    required this.content,
+    required this.mood,
+    required this.moodScore,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['content'] = Variable<String>(content);
+    map['mood'] = Variable<String>(mood);
+    map['mood_score'] = Variable<int>(moodScore);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  JournalEntriesCompanion toCompanion(bool nullToAbsent) {
+    return JournalEntriesCompanion(
+      id: Value(id),
+      content: Value(content),
+      mood: Value(mood),
+      moodScore: Value(moodScore),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory JournalEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return JournalEntry(
+      id: serializer.fromJson<String>(json['id']),
+      content: serializer.fromJson<String>(json['content']),
+      mood: serializer.fromJson<String>(json['mood']),
+      moodScore: serializer.fromJson<int>(json['moodScore']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'content': serializer.toJson<String>(content),
+      'mood': serializer.toJson<String>(mood),
+      'moodScore': serializer.toJson<int>(moodScore),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  JournalEntry copyWith({
+    String? id,
+    String? content,
+    String? mood,
+    int? moodScore,
+    DateTime? createdAt,
+  }) => JournalEntry(
+    id: id ?? this.id,
+    content: content ?? this.content,
+    mood: mood ?? this.mood,
+    moodScore: moodScore ?? this.moodScore,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  JournalEntry copyWithCompanion(JournalEntriesCompanion data) {
+    return JournalEntry(
+      id: data.id.present ? data.id.value : this.id,
+      content: data.content.present ? data.content.value : this.content,
+      mood: data.mood.present ? data.mood.value : this.mood,
+      moodScore: data.moodScore.present ? data.moodScore.value : this.moodScore,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalEntry(')
+          ..write('id: $id, ')
+          ..write('content: $content, ')
+          ..write('mood: $mood, ')
+          ..write('moodScore: $moodScore, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, content, mood, moodScore, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is JournalEntry &&
+          other.id == this.id &&
+          other.content == this.content &&
+          other.mood == this.mood &&
+          other.moodScore == this.moodScore &&
+          other.createdAt == this.createdAt);
+}
+
+class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
+  final Value<String> id;
+  final Value<String> content;
+  final Value<String> mood;
+  final Value<int> moodScore;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const JournalEntriesCompanion({
+    this.id = const Value.absent(),
+    this.content = const Value.absent(),
+    this.mood = const Value.absent(),
+    this.moodScore = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  JournalEntriesCompanion.insert({
+    required String id,
+    required String content,
+    required String mood,
+    this.moodScore = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       content = Value(content),
+       mood = Value(mood);
+  static Insertable<JournalEntry> custom({
+    Expression<String>? id,
+    Expression<String>? content,
+    Expression<String>? mood,
+    Expression<int>? moodScore,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (content != null) 'content': content,
+      if (mood != null) 'mood': mood,
+      if (moodScore != null) 'mood_score': moodScore,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  JournalEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? content,
+    Value<String>? mood,
+    Value<int>? moodScore,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return JournalEntriesCompanion(
+      id: id ?? this.id,
+      content: content ?? this.content,
+      mood: mood ?? this.mood,
+      moodScore: moodScore ?? this.moodScore,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (mood.present) {
+      map['mood'] = Variable<String>(mood.value);
+    }
+    if (moodScore.present) {
+      map['mood_score'] = Variable<int>(moodScore.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('content: $content, ')
+          ..write('mood: $mood, ')
+          ..write('moodScore: $moodScore, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ShopItemsTable extends ShopItems
+    with TableInfo<$ShopItemsTable, ShopItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ShopItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _emojiMeta = const VerificationMeta('emoji');
+  @override
+  late final GeneratedColumn<String> emoji = GeneratedColumn<String>(
+    'emoji',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _priceMeta = const VerificationMeta('price');
+  @override
+  late final GeneratedColumn<int> price = GeneratedColumn<int>(
+    'price',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ownedMeta = const VerificationMeta('owned');
+  @override
+  late final GeneratedColumn<bool> owned = GeneratedColumn<bool>(
+    'owned',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("owned" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _equippedMeta = const VerificationMeta(
+    'equipped',
+  );
+  @override
+  late final GeneratedColumn<bool> equipped = GeneratedColumn<bool>(
+    'equipped',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("equipped" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    emoji,
+    price,
+    category,
+    owned,
+    equipped,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'shop_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ShopItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('emoji')) {
+      context.handle(
+        _emojiMeta,
+        emoji.isAcceptableOrUnknown(data['emoji']!, _emojiMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_emojiMeta);
+    }
+    if (data.containsKey('price')) {
+      context.handle(
+        _priceMeta,
+        price.isAcceptableOrUnknown(data['price']!, _priceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_priceMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryMeta);
+    }
+    if (data.containsKey('owned')) {
+      context.handle(
+        _ownedMeta,
+        owned.isAcceptableOrUnknown(data['owned']!, _ownedMeta),
+      );
+    }
+    if (data.containsKey('equipped')) {
+      context.handle(
+        _equippedMeta,
+        equipped.isAcceptableOrUnknown(data['equipped']!, _equippedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ShopItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ShopItem(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      emoji: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}emoji'],
+      )!,
+      price: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}price'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      owned: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}owned'],
+      )!,
+      equipped: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}equipped'],
+      )!,
+    );
+  }
+
+  @override
+  $ShopItemsTable createAlias(String alias) {
+    return $ShopItemsTable(attachedDatabase, alias);
+  }
+}
+
+class ShopItem extends DataClass implements Insertable<ShopItem> {
+  final String id;
+  final String name;
+  final String emoji;
+  final int price;
+  final String category;
+  final bool owned;
+  final bool equipped;
+  const ShopItem({
+    required this.id,
+    required this.name,
+    required this.emoji,
+    required this.price,
+    required this.category,
+    required this.owned,
+    required this.equipped,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['emoji'] = Variable<String>(emoji);
+    map['price'] = Variable<int>(price);
+    map['category'] = Variable<String>(category);
+    map['owned'] = Variable<bool>(owned);
+    map['equipped'] = Variable<bool>(equipped);
+    return map;
+  }
+
+  ShopItemsCompanion toCompanion(bool nullToAbsent) {
+    return ShopItemsCompanion(
+      id: Value(id),
+      name: Value(name),
+      emoji: Value(emoji),
+      price: Value(price),
+      category: Value(category),
+      owned: Value(owned),
+      equipped: Value(equipped),
+    );
+  }
+
+  factory ShopItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ShopItem(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      emoji: serializer.fromJson<String>(json['emoji']),
+      price: serializer.fromJson<int>(json['price']),
+      category: serializer.fromJson<String>(json['category']),
+      owned: serializer.fromJson<bool>(json['owned']),
+      equipped: serializer.fromJson<bool>(json['equipped']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'emoji': serializer.toJson<String>(emoji),
+      'price': serializer.toJson<int>(price),
+      'category': serializer.toJson<String>(category),
+      'owned': serializer.toJson<bool>(owned),
+      'equipped': serializer.toJson<bool>(equipped),
+    };
+  }
+
+  ShopItem copyWith({
+    String? id,
+    String? name,
+    String? emoji,
+    int? price,
+    String? category,
+    bool? owned,
+    bool? equipped,
+  }) => ShopItem(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    emoji: emoji ?? this.emoji,
+    price: price ?? this.price,
+    category: category ?? this.category,
+    owned: owned ?? this.owned,
+    equipped: equipped ?? this.equipped,
+  );
+  ShopItem copyWithCompanion(ShopItemsCompanion data) {
+    return ShopItem(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      emoji: data.emoji.present ? data.emoji.value : this.emoji,
+      price: data.price.present ? data.price.value : this.price,
+      category: data.category.present ? data.category.value : this.category,
+      owned: data.owned.present ? data.owned.value : this.owned,
+      equipped: data.equipped.present ? data.equipped.value : this.equipped,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShopItem(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('emoji: $emoji, ')
+          ..write('price: $price, ')
+          ..write('category: $category, ')
+          ..write('owned: $owned, ')
+          ..write('equipped: $equipped')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, emoji, price, category, owned, equipped);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ShopItem &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.emoji == this.emoji &&
+          other.price == this.price &&
+          other.category == this.category &&
+          other.owned == this.owned &&
+          other.equipped == this.equipped);
+}
+
+class ShopItemsCompanion extends UpdateCompanion<ShopItem> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> emoji;
+  final Value<int> price;
+  final Value<String> category;
+  final Value<bool> owned;
+  final Value<bool> equipped;
+  final Value<int> rowid;
+  const ShopItemsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.emoji = const Value.absent(),
+    this.price = const Value.absent(),
+    this.category = const Value.absent(),
+    this.owned = const Value.absent(),
+    this.equipped = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ShopItemsCompanion.insert({
+    required String id,
+    required String name,
+    required String emoji,
+    required int price,
+    required String category,
+    this.owned = const Value.absent(),
+    this.equipped = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       emoji = Value(emoji),
+       price = Value(price),
+       category = Value(category);
+  static Insertable<ShopItem> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? emoji,
+    Expression<int>? price,
+    Expression<String>? category,
+    Expression<bool>? owned,
+    Expression<bool>? equipped,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (emoji != null) 'emoji': emoji,
+      if (price != null) 'price': price,
+      if (category != null) 'category': category,
+      if (owned != null) 'owned': owned,
+      if (equipped != null) 'equipped': equipped,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ShopItemsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? emoji,
+    Value<int>? price,
+    Value<String>? category,
+    Value<bool>? owned,
+    Value<bool>? equipped,
+    Value<int>? rowid,
+  }) {
+    return ShopItemsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      emoji: emoji ?? this.emoji,
+      price: price ?? this.price,
+      category: category ?? this.category,
+      owned: owned ?? this.owned,
+      equipped: equipped ?? this.equipped,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (emoji.present) {
+      map['emoji'] = Variable<String>(emoji.value);
+    }
+    if (price.present) {
+      map['price'] = Variable<int>(price.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (owned.present) {
+      map['owned'] = Variable<bool>(owned.value);
+    }
+    if (equipped.present) {
+      map['equipped'] = Variable<bool>(equipped.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShopItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('emoji: $emoji, ')
+          ..write('price: $price, ')
+          ..write('category: $category, ')
+          ..write('owned: $owned, ')
+          ..write('equipped: $equipped, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AdventureLandsTable extends AdventureLands
+    with TableInfo<$AdventureLandsTable, AdventureLand> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AdventureLandsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _emojiMeta = const VerificationMeta('emoji');
+  @override
+  late final GeneratedColumn<String> emoji = GeneratedColumn<String>(
+    'emoji',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _requiredLevelMeta = const VerificationMeta(
+    'requiredLevel',
+  );
+  @override
+  late final GeneratedColumn<int> requiredLevel = GeneratedColumn<int>(
+    'required_level',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _unlockedMeta = const VerificationMeta(
+    'unlocked',
+  );
+  @override
+  late final GeneratedColumn<bool> unlocked = GeneratedColumn<bool>(
+    'unlocked',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("unlocked" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _progressMeta = const VerificationMeta(
+    'progress',
+  );
+  @override
+  late final GeneratedColumn<double> progress = GeneratedColumn<double>(
+    'progress',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    emoji,
+    description,
+    requiredLevel,
+    unlocked,
+    progress,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'adventure_lands';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AdventureLand> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('emoji')) {
+      context.handle(
+        _emojiMeta,
+        emoji.isAcceptableOrUnknown(data['emoji']!, _emojiMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_emojiMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_descriptionMeta);
+    }
+    if (data.containsKey('required_level')) {
+      context.handle(
+        _requiredLevelMeta,
+        requiredLevel.isAcceptableOrUnknown(
+          data['required_level']!,
+          _requiredLevelMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_requiredLevelMeta);
+    }
+    if (data.containsKey('unlocked')) {
+      context.handle(
+        _unlockedMeta,
+        unlocked.isAcceptableOrUnknown(data['unlocked']!, _unlockedMeta),
+      );
+    }
+    if (data.containsKey('progress')) {
+      context.handle(
+        _progressMeta,
+        progress.isAcceptableOrUnknown(data['progress']!, _progressMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AdventureLand map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AdventureLand(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      emoji: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}emoji'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      requiredLevel: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}required_level'],
+      )!,
+      unlocked: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}unlocked'],
+      )!,
+      progress: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}progress'],
+      )!,
+    );
+  }
+
+  @override
+  $AdventureLandsTable createAlias(String alias) {
+    return $AdventureLandsTable(attachedDatabase, alias);
+  }
+}
+
+class AdventureLand extends DataClass implements Insertable<AdventureLand> {
+  final String id;
+  final String name;
+  final String emoji;
+  final String description;
+  final int requiredLevel;
+  final bool unlocked;
+  final double progress;
+  const AdventureLand({
+    required this.id,
+    required this.name,
+    required this.emoji,
+    required this.description,
+    required this.requiredLevel,
+    required this.unlocked,
+    required this.progress,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['emoji'] = Variable<String>(emoji);
+    map['description'] = Variable<String>(description);
+    map['required_level'] = Variable<int>(requiredLevel);
+    map['unlocked'] = Variable<bool>(unlocked);
+    map['progress'] = Variable<double>(progress);
+    return map;
+  }
+
+  AdventureLandsCompanion toCompanion(bool nullToAbsent) {
+    return AdventureLandsCompanion(
+      id: Value(id),
+      name: Value(name),
+      emoji: Value(emoji),
+      description: Value(description),
+      requiredLevel: Value(requiredLevel),
+      unlocked: Value(unlocked),
+      progress: Value(progress),
+    );
+  }
+
+  factory AdventureLand.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AdventureLand(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      emoji: serializer.fromJson<String>(json['emoji']),
+      description: serializer.fromJson<String>(json['description']),
+      requiredLevel: serializer.fromJson<int>(json['requiredLevel']),
+      unlocked: serializer.fromJson<bool>(json['unlocked']),
+      progress: serializer.fromJson<double>(json['progress']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'emoji': serializer.toJson<String>(emoji),
+      'description': serializer.toJson<String>(description),
+      'requiredLevel': serializer.toJson<int>(requiredLevel),
+      'unlocked': serializer.toJson<bool>(unlocked),
+      'progress': serializer.toJson<double>(progress),
+    };
+  }
+
+  AdventureLand copyWith({
+    String? id,
+    String? name,
+    String? emoji,
+    String? description,
+    int? requiredLevel,
+    bool? unlocked,
+    double? progress,
+  }) => AdventureLand(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    emoji: emoji ?? this.emoji,
+    description: description ?? this.description,
+    requiredLevel: requiredLevel ?? this.requiredLevel,
+    unlocked: unlocked ?? this.unlocked,
+    progress: progress ?? this.progress,
+  );
+  AdventureLand copyWithCompanion(AdventureLandsCompanion data) {
+    return AdventureLand(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      emoji: data.emoji.present ? data.emoji.value : this.emoji,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      requiredLevel: data.requiredLevel.present
+          ? data.requiredLevel.value
+          : this.requiredLevel,
+      unlocked: data.unlocked.present ? data.unlocked.value : this.unlocked,
+      progress: data.progress.present ? data.progress.value : this.progress,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AdventureLand(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('emoji: $emoji, ')
+          ..write('description: $description, ')
+          ..write('requiredLevel: $requiredLevel, ')
+          ..write('unlocked: $unlocked, ')
+          ..write('progress: $progress')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    emoji,
+    description,
+    requiredLevel,
+    unlocked,
+    progress,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AdventureLand &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.emoji == this.emoji &&
+          other.description == this.description &&
+          other.requiredLevel == this.requiredLevel &&
+          other.unlocked == this.unlocked &&
+          other.progress == this.progress);
+}
+
+class AdventureLandsCompanion extends UpdateCompanion<AdventureLand> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> emoji;
+  final Value<String> description;
+  final Value<int> requiredLevel;
+  final Value<bool> unlocked;
+  final Value<double> progress;
+  final Value<int> rowid;
+  const AdventureLandsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.emoji = const Value.absent(),
+    this.description = const Value.absent(),
+    this.requiredLevel = const Value.absent(),
+    this.unlocked = const Value.absent(),
+    this.progress = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AdventureLandsCompanion.insert({
+    required String id,
+    required String name,
+    required String emoji,
+    required String description,
+    required int requiredLevel,
+    this.unlocked = const Value.absent(),
+    this.progress = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       emoji = Value(emoji),
+       description = Value(description),
+       requiredLevel = Value(requiredLevel);
+  static Insertable<AdventureLand> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? emoji,
+    Expression<String>? description,
+    Expression<int>? requiredLevel,
+    Expression<bool>? unlocked,
+    Expression<double>? progress,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (emoji != null) 'emoji': emoji,
+      if (description != null) 'description': description,
+      if (requiredLevel != null) 'required_level': requiredLevel,
+      if (unlocked != null) 'unlocked': unlocked,
+      if (progress != null) 'progress': progress,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AdventureLandsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? emoji,
+    Value<String>? description,
+    Value<int>? requiredLevel,
+    Value<bool>? unlocked,
+    Value<double>? progress,
+    Value<int>? rowid,
+  }) {
+    return AdventureLandsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      emoji: emoji ?? this.emoji,
+      description: description ?? this.description,
+      requiredLevel: requiredLevel ?? this.requiredLevel,
+      unlocked: unlocked ?? this.unlocked,
+      progress: progress ?? this.progress,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (emoji.present) {
+      map['emoji'] = Variable<String>(emoji.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (requiredLevel.present) {
+      map['required_level'] = Variable<int>(requiredLevel.value);
+    }
+    if (unlocked.present) {
+      map['unlocked'] = Variable<bool>(unlocked.value);
+    }
+    if (progress.present) {
+      map['progress'] = Variable<double>(progress.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AdventureLandsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('emoji: $emoji, ')
+          ..write('description: $description, ')
+          ..write('requiredLevel: $requiredLevel, ')
+          ..write('unlocked: $unlocked, ')
+          ..write('progress: $progress, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2282,6 +4332,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $HabitLogsTable habitLogs = $HabitLogsTable(this);
   late final $DuoSessionsTable duoSessions = $DuoSessionsTable(this);
   late final $PlantsTable plants = $PlantsTable(this);
+  late final $TasksTable tasks = $TasksTable(this);
+  late final $JournalEntriesTable journalEntries = $JournalEntriesTable(this);
+  late final $ShopItemsTable shopItems = $ShopItemsTable(this);
+  late final $AdventureLandsTable adventureLands = $AdventureLandsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2291,6 +4345,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     habitLogs,
     duoSessions,
     plants,
+    tasks,
+    journalEntries,
+    shopItems,
+    adventureLands,
   ];
 }
 
@@ -2307,10 +4365,12 @@ typedef $$HabitsTableCreateCompanionBuilder =
       Value<DateTime?> reminderTime,
       Value<int> streakCount,
       Value<int> longestStreak,
+      Value<DateTime?> lastCompletedAt,
       Value<DateTime> createdAt,
       Value<bool> isSharedWithPartner,
       required int iconBg,
       Value<bool> isArchived,
+      Value<int> xpReward,
       Value<int> rowid,
     });
 typedef $$HabitsTableUpdateCompanionBuilder =
@@ -2326,10 +4386,12 @@ typedef $$HabitsTableUpdateCompanionBuilder =
       Value<DateTime?> reminderTime,
       Value<int> streakCount,
       Value<int> longestStreak,
+      Value<DateTime?> lastCompletedAt,
       Value<DateTime> createdAt,
       Value<bool> isSharedWithPartner,
       Value<int> iconBg,
       Value<bool> isArchived,
+      Value<int> xpReward,
       Value<int> rowid,
     });
 
@@ -2420,6 +4482,11 @@ class $$HabitsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get lastCompletedAt => $composableBuilder(
+    column: $table.lastCompletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
@@ -2437,6 +4504,11 @@ class $$HabitsTableFilterComposer
 
   ColumnFilters<bool> get isArchived => $composableBuilder(
     column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get xpReward => $composableBuilder(
+    column: $table.xpReward,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2530,6 +4602,11 @@ class $$HabitsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get lastCompletedAt => $composableBuilder(
+    column: $table.lastCompletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -2547,6 +4624,11 @@ class $$HabitsTableOrderingComposer
 
   ColumnOrderings<bool> get isArchived => $composableBuilder(
     column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get xpReward => $composableBuilder(
+    column: $table.xpReward,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -2605,6 +4687,11 @@ class $$HabitsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<DateTime> get lastCompletedAt => $composableBuilder(
+    column: $table.lastCompletedAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -2620,6 +4707,9 @@ class $$HabitsTableAnnotationComposer
     column: $table.isArchived,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get xpReward =>
+      $composableBuilder(column: $table.xpReward, builder: (column) => column);
 
   Expression<T> habitLogsRefs<T extends Object>(
     Expression<T> Function($$HabitLogsTableAnnotationComposer a) f,
@@ -2686,10 +4776,12 @@ class $$HabitsTableTableManager
                 Value<DateTime?> reminderTime = const Value.absent(),
                 Value<int> streakCount = const Value.absent(),
                 Value<int> longestStreak = const Value.absent(),
+                Value<DateTime?> lastCompletedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<bool> isSharedWithPartner = const Value.absent(),
                 Value<int> iconBg = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
+                Value<int> xpReward = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HabitsCompanion(
                 id: id,
@@ -2703,10 +4795,12 @@ class $$HabitsTableTableManager
                 reminderTime: reminderTime,
                 streakCount: streakCount,
                 longestStreak: longestStreak,
+                lastCompletedAt: lastCompletedAt,
                 createdAt: createdAt,
                 isSharedWithPartner: isSharedWithPartner,
                 iconBg: iconBg,
                 isArchived: isArchived,
+                xpReward: xpReward,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2722,10 +4816,12 @@ class $$HabitsTableTableManager
                 Value<DateTime?> reminderTime = const Value.absent(),
                 Value<int> streakCount = const Value.absent(),
                 Value<int> longestStreak = const Value.absent(),
+                Value<DateTime?> lastCompletedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<bool> isSharedWithPartner = const Value.absent(),
                 required int iconBg,
                 Value<bool> isArchived = const Value.absent(),
+                Value<int> xpReward = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HabitsCompanion.insert(
                 id: id,
@@ -2739,10 +4835,12 @@ class $$HabitsTableTableManager
                 reminderTime: reminderTime,
                 streakCount: streakCount,
                 longestStreak: longestStreak,
+                lastCompletedAt: lastCompletedAt,
                 createdAt: createdAt,
                 isSharedWithPartner: isSharedWithPartner,
                 iconBg: iconBg,
                 isArchived: isArchived,
+                xpReward: xpReward,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3464,7 +5562,8 @@ typedef $$PlantsTableCreateCompanionBuilder =
       required String emoji,
       required int stage,
       Value<double> growthPercent,
-      required String duoSessionId,
+      Value<String?> duoSessionId,
+      Value<String> ownerId,
       Value<int> waterCount,
       Value<DateTime?> lastWateredAt,
       Value<DateTime?> unlockedAt,
@@ -3477,7 +5576,8 @@ typedef $$PlantsTableUpdateCompanionBuilder =
       Value<String> emoji,
       Value<int> stage,
       Value<double> growthPercent,
-      Value<String> duoSessionId,
+      Value<String?> duoSessionId,
+      Value<String> ownerId,
       Value<int> waterCount,
       Value<DateTime?> lastWateredAt,
       Value<DateTime?> unlockedAt,
@@ -3493,9 +5593,9 @@ final class $$PlantsTableReferences
         $_aliasNameGenerator(db.plants.duoSessionId, db.duoSessions.id),
       );
 
-  $$DuoSessionsTableProcessedTableManager get duoSessionId {
-    final $_column = $_itemColumn<String>('duo_session_id')!;
-
+  $$DuoSessionsTableProcessedTableManager? get duoSessionId {
+    final $_column = $_itemColumn<String>('duo_session_id');
+    if ($_column == null) return null;
     final manager = $$DuoSessionsTableTableManager(
       $_db,
       $_db.duoSessions,
@@ -3539,6 +5639,11 @@ class $$PlantsTableFilterComposer
 
   ColumnFilters<double> get growthPercent => $composableBuilder(
     column: $table.growthPercent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3615,6 +5720,11 @@ class $$PlantsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get waterCount => $composableBuilder(
     column: $table.waterCount,
     builder: (column) => ColumnOrderings(column),
@@ -3679,6 +5789,9 @@ class $$PlantsTableAnnotationComposer
     column: $table.growthPercent,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
 
   GeneratedColumn<int> get waterCount => $composableBuilder(
     column: $table.waterCount,
@@ -3752,7 +5865,8 @@ class $$PlantsTableTableManager
                 Value<String> emoji = const Value.absent(),
                 Value<int> stage = const Value.absent(),
                 Value<double> growthPercent = const Value.absent(),
-                Value<String> duoSessionId = const Value.absent(),
+                Value<String?> duoSessionId = const Value.absent(),
+                Value<String> ownerId = const Value.absent(),
                 Value<int> waterCount = const Value.absent(),
                 Value<DateTime?> lastWateredAt = const Value.absent(),
                 Value<DateTime?> unlockedAt = const Value.absent(),
@@ -3764,6 +5878,7 @@ class $$PlantsTableTableManager
                 stage: stage,
                 growthPercent: growthPercent,
                 duoSessionId: duoSessionId,
+                ownerId: ownerId,
                 waterCount: waterCount,
                 lastWateredAt: lastWateredAt,
                 unlockedAt: unlockedAt,
@@ -3776,7 +5891,8 @@ class $$PlantsTableTableManager
                 required String emoji,
                 required int stage,
                 Value<double> growthPercent = const Value.absent(),
-                required String duoSessionId,
+                Value<String?> duoSessionId = const Value.absent(),
+                Value<String> ownerId = const Value.absent(),
                 Value<int> waterCount = const Value.absent(),
                 Value<DateTime?> lastWateredAt = const Value.absent(),
                 Value<DateTime?> unlockedAt = const Value.absent(),
@@ -3788,6 +5904,7 @@ class $$PlantsTableTableManager
                 stage: stage,
                 growthPercent: growthPercent,
                 duoSessionId: duoSessionId,
+                ownerId: ownerId,
                 waterCount: waterCount,
                 lastWateredAt: lastWateredAt,
                 unlockedAt: unlockedAt,
@@ -3858,6 +5975,980 @@ typedef $$PlantsTableProcessedTableManager =
       Plant,
       PrefetchHooks Function({bool duoSessionId})
     >;
+typedef $$TasksTableCreateCompanionBuilder =
+    TasksCompanion Function({
+      required String id,
+      required String title,
+      Value<String?> description,
+      Value<int> xpReward,
+      Value<int> bloomReward,
+      Value<bool> completed,
+      Value<DateTime?> dueAt,
+      Value<DateTime?> completedAt,
+      Value<DateTime> createdAt,
+      Value<int?> estimatedMinutes,
+      Value<int> rowid,
+    });
+typedef $$TasksTableUpdateCompanionBuilder =
+    TasksCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String?> description,
+      Value<int> xpReward,
+      Value<int> bloomReward,
+      Value<bool> completed,
+      Value<DateTime?> dueAt,
+      Value<DateTime?> completedAt,
+      Value<DateTime> createdAt,
+      Value<int?> estimatedMinutes,
+      Value<int> rowid,
+    });
+
+class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
+  $$TasksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get xpReward => $composableBuilder(
+    column: $table.xpReward,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bloomReward => $composableBuilder(
+    column: $table.bloomReward,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get completed => $composableBuilder(
+    column: $table.completed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get dueAt => $composableBuilder(
+    column: $table.dueAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get estimatedMinutes => $composableBuilder(
+    column: $table.estimatedMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TasksTableOrderingComposer
+    extends Composer<_$AppDatabase, $TasksTable> {
+  $$TasksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get xpReward => $composableBuilder(
+    column: $table.xpReward,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bloomReward => $composableBuilder(
+    column: $table.bloomReward,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get completed => $composableBuilder(
+    column: $table.completed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get dueAt => $composableBuilder(
+    column: $table.dueAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get estimatedMinutes => $composableBuilder(
+    column: $table.estimatedMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TasksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TasksTable> {
+  $$TasksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get xpReward =>
+      $composableBuilder(column: $table.xpReward, builder: (column) => column);
+
+  GeneratedColumn<int> get bloomReward => $composableBuilder(
+    column: $table.bloomReward,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get completed =>
+      $composableBuilder(column: $table.completed, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get dueAt =>
+      $composableBuilder(column: $table.dueAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get estimatedMinutes => $composableBuilder(
+    column: $table.estimatedMinutes,
+    builder: (column) => column,
+  );
+}
+
+class $$TasksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TasksTable,
+          Task,
+          $$TasksTableFilterComposer,
+          $$TasksTableOrderingComposer,
+          $$TasksTableAnnotationComposer,
+          $$TasksTableCreateCompanionBuilder,
+          $$TasksTableUpdateCompanionBuilder,
+          (Task, BaseReferences<_$AppDatabase, $TasksTable, Task>),
+          Task,
+          PrefetchHooks Function()
+        > {
+  $$TasksTableTableManager(_$AppDatabase db, $TasksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TasksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TasksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TasksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<int> xpReward = const Value.absent(),
+                Value<int> bloomReward = const Value.absent(),
+                Value<bool> completed = const Value.absent(),
+                Value<DateTime?> dueAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int?> estimatedMinutes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TasksCompanion(
+                id: id,
+                title: title,
+                description: description,
+                xpReward: xpReward,
+                bloomReward: bloomReward,
+                completed: completed,
+                dueAt: dueAt,
+                completedAt: completedAt,
+                createdAt: createdAt,
+                estimatedMinutes: estimatedMinutes,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String?> description = const Value.absent(),
+                Value<int> xpReward = const Value.absent(),
+                Value<int> bloomReward = const Value.absent(),
+                Value<bool> completed = const Value.absent(),
+                Value<DateTime?> dueAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int?> estimatedMinutes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TasksCompanion.insert(
+                id: id,
+                title: title,
+                description: description,
+                xpReward: xpReward,
+                bloomReward: bloomReward,
+                completed: completed,
+                dueAt: dueAt,
+                completedAt: completedAt,
+                createdAt: createdAt,
+                estimatedMinutes: estimatedMinutes,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TasksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TasksTable,
+      Task,
+      $$TasksTableFilterComposer,
+      $$TasksTableOrderingComposer,
+      $$TasksTableAnnotationComposer,
+      $$TasksTableCreateCompanionBuilder,
+      $$TasksTableUpdateCompanionBuilder,
+      (Task, BaseReferences<_$AppDatabase, $TasksTable, Task>),
+      Task,
+      PrefetchHooks Function()
+    >;
+typedef $$JournalEntriesTableCreateCompanionBuilder =
+    JournalEntriesCompanion Function({
+      required String id,
+      required String content,
+      required String mood,
+      Value<int> moodScore,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$JournalEntriesTableUpdateCompanionBuilder =
+    JournalEntriesCompanion Function({
+      Value<String> id,
+      Value<String> content,
+      Value<String> mood,
+      Value<int> moodScore,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$JournalEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $JournalEntriesTable> {
+  $$JournalEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mood => $composableBuilder(
+    column: $table.mood,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get moodScore => $composableBuilder(
+    column: $table.moodScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$JournalEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $JournalEntriesTable> {
+  $$JournalEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mood => $composableBuilder(
+    column: $table.mood,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get moodScore => $composableBuilder(
+    column: $table.moodScore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$JournalEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $JournalEntriesTable> {
+  $$JournalEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get mood =>
+      $composableBuilder(column: $table.mood, builder: (column) => column);
+
+  GeneratedColumn<int> get moodScore =>
+      $composableBuilder(column: $table.moodScore, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$JournalEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $JournalEntriesTable,
+          JournalEntry,
+          $$JournalEntriesTableFilterComposer,
+          $$JournalEntriesTableOrderingComposer,
+          $$JournalEntriesTableAnnotationComposer,
+          $$JournalEntriesTableCreateCompanionBuilder,
+          $$JournalEntriesTableUpdateCompanionBuilder,
+          (
+            JournalEntry,
+            BaseReferences<_$AppDatabase, $JournalEntriesTable, JournalEntry>,
+          ),
+          JournalEntry,
+          PrefetchHooks Function()
+        > {
+  $$JournalEntriesTableTableManager(
+    _$AppDatabase db,
+    $JournalEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$JournalEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$JournalEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$JournalEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<String> mood = const Value.absent(),
+                Value<int> moodScore = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalEntriesCompanion(
+                id: id,
+                content: content,
+                mood: mood,
+                moodScore: moodScore,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String content,
+                required String mood,
+                Value<int> moodScore = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalEntriesCompanion.insert(
+                id: id,
+                content: content,
+                mood: mood,
+                moodScore: moodScore,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$JournalEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $JournalEntriesTable,
+      JournalEntry,
+      $$JournalEntriesTableFilterComposer,
+      $$JournalEntriesTableOrderingComposer,
+      $$JournalEntriesTableAnnotationComposer,
+      $$JournalEntriesTableCreateCompanionBuilder,
+      $$JournalEntriesTableUpdateCompanionBuilder,
+      (
+        JournalEntry,
+        BaseReferences<_$AppDatabase, $JournalEntriesTable, JournalEntry>,
+      ),
+      JournalEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$ShopItemsTableCreateCompanionBuilder =
+    ShopItemsCompanion Function({
+      required String id,
+      required String name,
+      required String emoji,
+      required int price,
+      required String category,
+      Value<bool> owned,
+      Value<bool> equipped,
+      Value<int> rowid,
+    });
+typedef $$ShopItemsTableUpdateCompanionBuilder =
+    ShopItemsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> emoji,
+      Value<int> price,
+      Value<String> category,
+      Value<bool> owned,
+      Value<bool> equipped,
+      Value<int> rowid,
+    });
+
+class $$ShopItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $ShopItemsTable> {
+  $$ShopItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get emoji => $composableBuilder(
+    column: $table.emoji,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get owned => $composableBuilder(
+    column: $table.owned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get equipped => $composableBuilder(
+    column: $table.equipped,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ShopItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ShopItemsTable> {
+  $$ShopItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get emoji => $composableBuilder(
+    column: $table.emoji,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get owned => $composableBuilder(
+    column: $table.owned,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get equipped => $composableBuilder(
+    column: $table.equipped,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ShopItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ShopItemsTable> {
+  $$ShopItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get emoji =>
+      $composableBuilder(column: $table.emoji, builder: (column) => column);
+
+  GeneratedColumn<int> get price =>
+      $composableBuilder(column: $table.price, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<bool> get owned =>
+      $composableBuilder(column: $table.owned, builder: (column) => column);
+
+  GeneratedColumn<bool> get equipped =>
+      $composableBuilder(column: $table.equipped, builder: (column) => column);
+}
+
+class $$ShopItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ShopItemsTable,
+          ShopItem,
+          $$ShopItemsTableFilterComposer,
+          $$ShopItemsTableOrderingComposer,
+          $$ShopItemsTableAnnotationComposer,
+          $$ShopItemsTableCreateCompanionBuilder,
+          $$ShopItemsTableUpdateCompanionBuilder,
+          (ShopItem, BaseReferences<_$AppDatabase, $ShopItemsTable, ShopItem>),
+          ShopItem,
+          PrefetchHooks Function()
+        > {
+  $$ShopItemsTableTableManager(_$AppDatabase db, $ShopItemsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ShopItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ShopItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ShopItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> emoji = const Value.absent(),
+                Value<int> price = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<bool> owned = const Value.absent(),
+                Value<bool> equipped = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ShopItemsCompanion(
+                id: id,
+                name: name,
+                emoji: emoji,
+                price: price,
+                category: category,
+                owned: owned,
+                equipped: equipped,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String emoji,
+                required int price,
+                required String category,
+                Value<bool> owned = const Value.absent(),
+                Value<bool> equipped = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ShopItemsCompanion.insert(
+                id: id,
+                name: name,
+                emoji: emoji,
+                price: price,
+                category: category,
+                owned: owned,
+                equipped: equipped,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ShopItemsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ShopItemsTable,
+      ShopItem,
+      $$ShopItemsTableFilterComposer,
+      $$ShopItemsTableOrderingComposer,
+      $$ShopItemsTableAnnotationComposer,
+      $$ShopItemsTableCreateCompanionBuilder,
+      $$ShopItemsTableUpdateCompanionBuilder,
+      (ShopItem, BaseReferences<_$AppDatabase, $ShopItemsTable, ShopItem>),
+      ShopItem,
+      PrefetchHooks Function()
+    >;
+typedef $$AdventureLandsTableCreateCompanionBuilder =
+    AdventureLandsCompanion Function({
+      required String id,
+      required String name,
+      required String emoji,
+      required String description,
+      required int requiredLevel,
+      Value<bool> unlocked,
+      Value<double> progress,
+      Value<int> rowid,
+    });
+typedef $$AdventureLandsTableUpdateCompanionBuilder =
+    AdventureLandsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> emoji,
+      Value<String> description,
+      Value<int> requiredLevel,
+      Value<bool> unlocked,
+      Value<double> progress,
+      Value<int> rowid,
+    });
+
+class $$AdventureLandsTableFilterComposer
+    extends Composer<_$AppDatabase, $AdventureLandsTable> {
+  $$AdventureLandsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get emoji => $composableBuilder(
+    column: $table.emoji,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get requiredLevel => $composableBuilder(
+    column: $table.requiredLevel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get unlocked => $composableBuilder(
+    column: $table.unlocked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get progress => $composableBuilder(
+    column: $table.progress,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AdventureLandsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AdventureLandsTable> {
+  $$AdventureLandsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get emoji => $composableBuilder(
+    column: $table.emoji,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get requiredLevel => $composableBuilder(
+    column: $table.requiredLevel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get unlocked => $composableBuilder(
+    column: $table.unlocked,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get progress => $composableBuilder(
+    column: $table.progress,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AdventureLandsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AdventureLandsTable> {
+  $$AdventureLandsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get emoji =>
+      $composableBuilder(column: $table.emoji, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get requiredLevel => $composableBuilder(
+    column: $table.requiredLevel,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get unlocked =>
+      $composableBuilder(column: $table.unlocked, builder: (column) => column);
+
+  GeneratedColumn<double> get progress =>
+      $composableBuilder(column: $table.progress, builder: (column) => column);
+}
+
+class $$AdventureLandsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AdventureLandsTable,
+          AdventureLand,
+          $$AdventureLandsTableFilterComposer,
+          $$AdventureLandsTableOrderingComposer,
+          $$AdventureLandsTableAnnotationComposer,
+          $$AdventureLandsTableCreateCompanionBuilder,
+          $$AdventureLandsTableUpdateCompanionBuilder,
+          (
+            AdventureLand,
+            BaseReferences<_$AppDatabase, $AdventureLandsTable, AdventureLand>,
+          ),
+          AdventureLand,
+          PrefetchHooks Function()
+        > {
+  $$AdventureLandsTableTableManager(
+    _$AppDatabase db,
+    $AdventureLandsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AdventureLandsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AdventureLandsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AdventureLandsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> emoji = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<int> requiredLevel = const Value.absent(),
+                Value<bool> unlocked = const Value.absent(),
+                Value<double> progress = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AdventureLandsCompanion(
+                id: id,
+                name: name,
+                emoji: emoji,
+                description: description,
+                requiredLevel: requiredLevel,
+                unlocked: unlocked,
+                progress: progress,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String emoji,
+                required String description,
+                required int requiredLevel,
+                Value<bool> unlocked = const Value.absent(),
+                Value<double> progress = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AdventureLandsCompanion.insert(
+                id: id,
+                name: name,
+                emoji: emoji,
+                description: description,
+                requiredLevel: requiredLevel,
+                unlocked: unlocked,
+                progress: progress,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AdventureLandsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AdventureLandsTable,
+      AdventureLand,
+      $$AdventureLandsTableFilterComposer,
+      $$AdventureLandsTableOrderingComposer,
+      $$AdventureLandsTableAnnotationComposer,
+      $$AdventureLandsTableCreateCompanionBuilder,
+      $$AdventureLandsTableUpdateCompanionBuilder,
+      (
+        AdventureLand,
+        BaseReferences<_$AppDatabase, $AdventureLandsTable, AdventureLand>,
+      ),
+      AdventureLand,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3870,4 +6961,12 @@ class $AppDatabaseManager {
       $$DuoSessionsTableTableManager(_db, _db.duoSessions);
   $$PlantsTableTableManager get plants =>
       $$PlantsTableTableManager(_db, _db.plants);
+  $$TasksTableTableManager get tasks =>
+      $$TasksTableTableManager(_db, _db.tasks);
+  $$JournalEntriesTableTableManager get journalEntries =>
+      $$JournalEntriesTableTableManager(_db, _db.journalEntries);
+  $$ShopItemsTableTableManager get shopItems =>
+      $$ShopItemsTableTableManager(_db, _db.shopItems);
+  $$AdventureLandsTableTableManager get adventureLands =>
+      $$AdventureLandsTableTableManager(_db, _db.adventureLands);
 }

@@ -20,7 +20,7 @@ class NotificationHelper {
     required TimeOfDay time,
   }) async {
     // In a real app, we would use timezone-aware scheduling
-    print('Scheduled reminder for $habitName at ${time.hour}:${time.minute}');
+    debugPrint('Scheduled reminder for $habitName at ${time.hour}:${time.minute}');
   }
 
   static Future<void> cancelHabitReminder(String habitId) async {

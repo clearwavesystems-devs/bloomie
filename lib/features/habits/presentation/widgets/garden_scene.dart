@@ -8,16 +8,11 @@ class GardenScene extends StatelessWidget {
   final String plantName;
   final double growth;
 
-  const GardenScene({
-    super.key,
-    required this.plantEmoji,
-    required this.plantName,
-    required this.growth,
-  });
+  const GardenScene({super.key, required this.plantEmoji, required this.plantName, required this.growth});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 180,
       width: double.infinity,
       child: Stack(
@@ -32,17 +27,20 @@ class GardenScene extends StatelessWidget {
               borderRadius: BorderRadius.vertical(top: Radius.elliptical(200, 30)),
             ),
           ),
-          
+
           // Shared Plant
           Positioned(
             bottom: 30,
             child: Column(
               children: [
-                Text(
-                  plantEmoji,
-                  style: const TextStyle(fontSize: 48),
-                ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-                 .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 2.seconds, curve: Curves.easeInOut),
+                Text(plantEmoji, style: const TextStyle(fontSize: 48))
+                    .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                    .scale(
+                      begin: const Offset(1, 1),
+                      end: const Offset(1.1, 1.1),
+                      duration: 2.seconds,
+                      curve: Curves.easeInOut,
+                    ),
                 Text(
                   plantName,
                   style: const TextStyle(
@@ -55,14 +53,14 @@ class GardenScene extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Left Bunny (You)
           const Positioned(
             left: 40,
             bottom: 20,
             child: BunnyWidget(label: 'You', color: AppColors.primaryPink),
           ),
-          
+
           // Right Bunny (Mira)
           const Positioned(
             right: 40,

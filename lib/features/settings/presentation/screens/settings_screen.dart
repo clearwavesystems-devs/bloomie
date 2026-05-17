@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloomie/core/theme/cubit/theme_cubit.dart';
 import 'package:bloomie/core/locale/cubit/locale_cubit.dart';
 import 'package:go_router/go_router.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -20,7 +21,7 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 title: const Text('Version'),
                 subtitle: const Text('1.0.0'),
-                leading: const Icon(Icons.info_outline),
+                leading: const Icon(SolarIconsOutline.infoCircle),
               ),
             ],
           ),
@@ -63,8 +64,8 @@ class _ThemeTile extends StatelessWidget {
         return ListTile(
           title: const Text('Theme'),
           subtitle: Text(_getThemeLabel(state.themeMode)),
-          leading: const Icon(Icons.palette_outlined),
-          trailing: const Icon(Icons.chevron_right),
+          leading: const Icon(SolarIconsOutline.palette),
+          trailing: const Icon(SolarIconsOutline.altArrowRight),
           onTap: () => _showThemeDialog(context),
         );
       },
@@ -93,9 +94,9 @@ class _ThemeTile extends StatelessWidget {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _ThemeOption(ThemeMode.light, Icons.light_mode),
-                _ThemeOption(ThemeMode.dark, Icons.dark_mode),
-                _ThemeOption(ThemeMode.system, Icons.brightness_auto),
+                _ThemeOption(ThemeMode.light, SolarIconsOutline.sun),
+                _ThemeOption(ThemeMode.dark, SolarIconsOutline.moon),
+                _ThemeOption(ThemeMode.system, SolarIconsOutline.settings),
               ],
             ),
           ),
@@ -119,7 +120,9 @@ class _ThemeOption extends StatelessWidget {
         return ListTile(
           title: Text(_getThemeLabel(mode)),
           leading: Icon(icon),
-          trailing: isSelected ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
+          trailing: isSelected
+              ? Icon(SolarIconsOutline.checkSquare, color: Theme.of(context).colorScheme.primary)
+              : null,
           onTap: () {
             context.read<ThemeCubit>().setThemeMode(mode);
             context.pop();
@@ -149,8 +152,8 @@ class _LanguageTile extends StatelessWidget {
         return ListTile(
           title: const Text('Language'),
           subtitle: Text(_getLanguageLabel(state.locale.languageCode)),
-          leading: const Icon(Icons.language),
-          trailing: const Icon(Icons.chevron_right),
+          leading: const Icon(SolarIconsOutline.global),
+          trailing: const Icon(SolarIconsOutline.altArrowRight),
           onTap: () => _showLanguageDialog(context),
         );
       },
@@ -200,7 +203,9 @@ class _LanguageOption extends StatelessWidget {
         final isSelected = state.locale.languageCode == locale.languageCode;
         return ListTile(
           title: Text(label),
-          trailing: isSelected ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
+          trailing: isSelected
+              ? Icon(SolarIconsOutline.checkSquare, color: Theme.of(context).colorScheme.primary)
+              : null,
           onTap: () {
             context.read<LocaleCubit>().setLocale(locale);
             context.pop();

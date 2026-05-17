@@ -8,17 +8,39 @@ import 'package:bloomie/features/garden/presentation/screens/garden_screen.dart'
 import 'package:bloomie/features/profile/presentation/screens/profile_screen.dart';
 import 'package:bloomie/features/habits/presentation/screens/add_habit_screen.dart';
 import 'package:bloomie/features/duo/presentation/screens/duo_screen.dart';
+import 'package:bloomie/features/task/presentation/screens/task_screen.dart';
+import 'package:bloomie/features/journal/presentation/screens/journal_screen.dart';
+import 'package:bloomie/features/shop/presentation/screens/shop_screen.dart';
+import 'package:bloomie/features/adventure/presentation/screens/adventure_screen.dart';
+import 'package:bloomie/features/auth/presentation/screens/auth_screen.dart';
+import 'package:bloomie/features/auth/cubit/auth_cubit.dart';
+import 'package:bloomie/features/auth/cubit/auth_state.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
   static final _shellNavigatorHomeKey = GlobalKey<NavigatorState>(debugLabel: 'home');
   static final _shellNavigatorGardenKey = GlobalKey<NavigatorState>(debugLabel: 'garden');
+  static final _shellNavigatorTasksKey = GlobalKey<NavigatorState>(debugLabel: 'tasks');
   static final _shellNavigatorDuoKey = GlobalKey<NavigatorState>(debugLabel: 'duo');
   static final _shellNavigatorProfileKey = GlobalKey<NavigatorState>(debugLabel: 'profile');
 
   static final GoRouter router = GoRouter(
-    initialLocation: '/',
+    initialLocation: '/splash',
     navigatorKey: _rootNavigatorKey,
+    redirect: (context, state) {
+      final authState = context.read<AuthCubit>().state;
+      final isAuth = authState is AuthAuthenticated;
+      final isSplashRoute = state.matchedLocation == '/splash';
+      final isAuthRoute = state.matchedLocation == '/auth';
+
+      // Allow splash screen to execute its authentication check uninterrupted
+      if (isSplashRoute) return null;
+
+      if (!isAuth && !isAuthRoute) return '/auth';
+      if (isAuth && isAuthRoute) return '/';
+      return null;
+    },
     routes: [
       // Splash Screen
       GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
@@ -38,6 +60,11 @@ class AppRouter {
           StatefulShellBranch(
             navigatorKey: _shellNavigatorGardenKey,
             routes: [GoRoute(path: '/garden', builder: (context, state) => const GardenScreen())],
+          ),
+          // Tasks Branch
+          StatefulShellBranch(
+            navigatorKey: _shellNavigatorTasksKey,
+            routes: [GoRoute(path: '/tasks', builder: (context, state) => const TaskScreen())],
           ),
           // Duo Branch
           StatefulShellBranch(
@@ -62,6 +89,26 @@ class AppRouter {
         path: '/add-habit',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const AddHabitScreen(),
+      ),
+      GoRoute(
+        path: '/journal',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const JournalScreen(),
+      ),
+      GoRoute(
+        path: '/shop',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ShopScreen(),
+      ),
+      GoRoute(
+        path: '/adventure',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AdventureScreen(),
+      ),
+      GoRoute(
+        path: '/auth',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AuthScreen(),
       ),
     ],
   );

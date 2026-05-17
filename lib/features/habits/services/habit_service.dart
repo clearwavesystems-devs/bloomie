@@ -19,7 +19,18 @@ class HabitService {
     await _db.insertLog(log);
   }
 
-  Future<List<HabitLog>> getLogsForHabit(String habitId) => _db.getLogsForHabit(habitId);
+  /// All logs for a habit (for streak computation).
+  Future<List<HabitLog>> getLogsForHabit(String habitId) =>
+      _db.getLogsForHabit(habitId);
+
+  /// Logs for a habit since [since] (lighter query for recent history).
+  Future<List<HabitLog>> getLogsForHabitSince(
+          String habitId, DateTime since) =>
+      _db.getLogsForHabitSince(habitId, since);
+
+  /// All logs for a specific date (used by garden growth engine).
+  Future<List<HabitLog>> getLogsForDate(DateTime date) =>
+      _db.getLogsForDate(date);
 
   Future<void> archiveHabit(String habitId) => _db.archiveHabit(habitId);
 }

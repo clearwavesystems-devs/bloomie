@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/database/app_database.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 class HabitCard extends StatelessWidget {
   final Habit habit;
@@ -40,7 +41,9 @@ class HabitCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
         ),
         child: Row(
           children: [
@@ -48,7 +51,7 @@ class HabitCard extends StatelessWidget {
               width: 48.w,
               height: 48.w,
               decoration: BoxDecoration(
-                color: Color(habit.iconBg).withOpacity(0.4),
+                color: Color(habit.iconBg).withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -95,7 +98,7 @@ class HabitCard extends StatelessWidget {
             _CheckIndicator(isDone: isDone),
           ],
         ),
-      ).animate(target: isDone ? 1 : 0).shimmer(duration: 400.ms, color: Colors.white.withOpacity(0.5)),
+      ).animate(target: isDone ? 1 : 0).shimmer(duration: 400.ms, color: Colors.white.withValues(alpha: 0.5)),
     );
   }
 }
@@ -115,7 +118,7 @@ class _CheckIndicator extends StatelessWidget {
             gradient: isDone ? const LinearGradient(colors: [Color(0xFFE896B0), Color(0xFFC07AD0)]) : null,
             border: isDone ? null : Border.all(color: Colors.grey.shade300, width: 2),
           ),
-          child: isDone ? Icon(Icons.check, size: 18.sp, color: Colors.white) : null,
+          child: isDone ? Icon(SolarIconsOutline.checkCircle, size: 18.sp, color: Colors.white) : null,
         )
         .animate(target: isDone ? 1 : 0)
         .scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1), duration: 200.ms, curve: Curves.bounceOut);
