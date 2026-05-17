@@ -15,6 +15,7 @@ import 'package:bloomie/features/adventure/presentation/screens/adventure_screen
 import 'package:bloomie/features/auth/presentation/screens/auth_screen.dart';
 import 'package:bloomie/features/auth/cubit/auth_cubit.dart';
 import 'package:bloomie/features/auth/cubit/auth_state.dart';
+import 'package:bloomie/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppRouter {
@@ -33,17 +34,21 @@ class AppRouter {
       final isAuth = authState is AuthAuthenticated;
       final isSplashRoute = state.matchedLocation == '/splash';
       final isAuthRoute = state.matchedLocation == '/auth';
+      final isOnboardingRoute = state.matchedLocation == '/onboarding';
 
-      // Allow splash screen to execute its authentication check uninterrupted
-      if (isSplashRoute) return null;
+      // Allow splash and onboarding screens to execute uninterrupted
+      if (isSplashRoute || isOnboardingRoute) return null;
 
       if (!isAuth && !isAuthRoute) return '/auth';
-      if (isAuth && isAuthRoute) return '/';
+      if (isAuth && (isAuthRoute || isOnboardingRoute)) return '/';
       return null;
     },
     routes: [
       // Splash Screen
       GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
+
+      // Onboarding Screen
+      GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
 
       // Main App Navigation with Shell
       StatefulShellRoute.indexedStack(

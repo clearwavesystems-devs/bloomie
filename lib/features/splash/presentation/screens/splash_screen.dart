@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -47,12 +48,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthCubit, AuthState>(
-      listener: (context, state) {
-        // Runs synchronously (no async gaps here!) so there are zero warning violations
+      listener: (context, state) async {
         if (state is AuthAuthenticated) {
           context.go('/');
         } else if (state is AuthUnauthenticated || state is AuthError) {
-          context.go('/auth');
+          final prefs = await SharedPreferences.getInstance();
+          final hasSeen = prefs.getBool('has_seen_onboarding') ?? false;
+          if (context.mounted) {
+            if (hasSeen) {
+              context.go('/auth');
+            } else {
+              context.go('/onboarding');
+            }
+          }
         }
       },
       child: Scaffold(
