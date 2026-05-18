@@ -12,6 +12,7 @@ part 'app_database.g.dart';
 
 class Habits extends Table {
   TextColumn get id => text()();
+  TextColumn get userId => text().withDefault(const Constant('me'))(); // Current user ID
   TextColumn get name => text()();
   TextColumn get emoji => text()();
   IntColumn get category => integer()(); // Enum index
@@ -79,6 +80,7 @@ class Plants extends Table {
 
 class Tasks extends Table {
   TextColumn get id => text()();
+  TextColumn get userId => text().withDefault(const Constant('me'))(); // Current user ID
   TextColumn get title => text()();
   TextColumn get description => text().nullable()();
   IntColumn get xpReward => integer().withDefault(const Constant(20))();
@@ -151,7 +153,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -179,16 +181,46 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('DROP TABLE IF EXISTS plants');
         await m.createTable(plants);
       }
+      if (from < 4) {
+        // Add user_id column to habits table for user data isolation
+        try {
+          await m.addColumn(habits, habits.userId);
+        } catch (e) {
+          if (!e.toString().contains('duplicate column name')) {
+            rethrow;
+          }
+        }
+        // Migrate existing habits to have 'me' as user_id
+        await customStatement("UPDATE habits SET user_id = 'me' WHERE user_id IS NULL");
+      }
+      if (from < 5) {
+        // Add user_id column to tasks table for user data isolation
+        try {
+          await m.addColumn(tasks, tasks.userId);
+        } catch (e) {
+          if (!e.toString().contains('duplicate column name')) {
+            rethrow;
+          }
+        }
+        // Migrate existing tasks to have 'me' as user_id
+        await customStatement("UPDATE tasks SET user_id = 'me' WHERE user_id IS NULL");
+      }
     },
   );
 
   // ── Habit Queries ──────────────────────────
 
-  Future<List<Habit>> getAllHabits() =>
-      (select(habits)..where((t) => t.isArchived.equals(false))).get();
+  Future<List<Habit>> getAllHabits(String userId) =>
+      (select(habits)
+        ..where((t) => t.isArchived.equals(false))
+        ..where((t) => t.userId.equals(userId)))
+      .get();
 
-  Future<int> insertHabit(Habit habit) =>
-      into(habits).insertOnConflictUpdate(habit);
+  Future<int> insertHabit(Habit habit) {
+    // Ensure habit has userId
+    final habitWithUser = habit.copyWith(userId: habit.userId);
+    return into(habits).insert(habitWithUser);
+  }
 
   Future updateHabit(Habit habit) => update(habits).replace(habit);
 
@@ -268,20 +300,30 @@ class AppDatabase extends _$AppDatabase {
 
   // ── Task Queries ───────────────────────────
 
-  Future<List<Task>> getActiveTasks() =>
+  Future<List<Task>> getActiveTasks(String userId) =>
       (select(tasks)
             ..where((t) => t.completed.equals(false))
+            ..where((t) => t.userId.equals(userId))
             ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
           .get();
 
-  Future<List<Task>> getCompletedTasks() =>
+  Future<List<Task>> getCompletedTasks(String userId) =>
       (select(tasks)
             ..where((t) => t.completed.equals(true))
+            ..where((t) => t.userId.equals(userId))
             ..orderBy([(t) => OrderingTerm.desc(t.completedAt)]))
           .get();
 
-  Future<int> insertTask(Task task) => into(tasks).insertOnConflictUpdate(task);
-  Future updateTask(Task task) => update(tasks).replace(task);
+  Future<int> insertTask(Task task) {
+    final taskWithUser = task.copyWith(userId: task.userId);
+    return into(tasks).insert(taskWithUser);
+  }
+
+  Future updateTask(Task task) {
+    final taskWithUser = task.copyWith(userId: task.userId);
+    return update(tasks).replace(taskWithUser);
+  }
+
   Future deleteTask(String id) =>
       (delete(tasks)..where((t) => t.id.equals(id))).go();
 

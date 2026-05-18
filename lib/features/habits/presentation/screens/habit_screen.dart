@@ -521,7 +521,64 @@ class _HabitList extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<HabitsCubit, HabitsState>(
       builder: (context, state) {
+        if (state is HabitsInitial || state is HabitsLoading) {
+          return const SliverToBoxAdapter(
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (state is HabitsError) {
+          return SliverToBoxAdapter(
+            child: Container(
+              padding: EdgeInsets.all(20.h),
+              child: Center(
+                child: Text(
+                  'Failed to load habits',
+                  style: GoogleFonts.nunito(
+                    fontSize: 16.sp,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
         if (state is HabitsLoaded) {
+          if (state.habits.isEmpty) {
+            return SliverToBoxAdapter(
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 40.h),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 80.sp,
+                      color: Colors.grey.withValues(alpha: 0.5),
+                    ),
+                    SizedBox(height: 20.h),
+                    Text(
+                      'No habits yet!',
+                      style: GoogleFonts.baloo2(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF3A2030),
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    Text(
+                      'Tap the + button below to add your first habit.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        fontSize: 16.sp,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
           return SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final habit = state.habits[index];
@@ -536,9 +593,8 @@ class _HabitList extends StatelessWidget {
             }, childCount: state.habits.length),
           );
         }
-        return const SliverToBoxAdapter(
-          child: Center(child: CircularProgressIndicator()),
-        );
+
+        return const SliverToBoxAdapter(child: SizedBox.shrink());
       },
     );
   }

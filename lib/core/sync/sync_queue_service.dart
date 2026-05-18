@@ -141,12 +141,26 @@ class SyncQueueService extends ChangeNotifier {
           }
         }
       } catch (e) {
-        operation.retryCount++;
         debugPrint('⚠️ SyncQueue: Error processing ${operation.type.toString().split('.').last}: $e');
-        if (operation.retryCount < 5) {
-          failedOperations.add(operation);
-        } else {
+
+        // If it's a row-level security error (RLS policy violation), Forbidden, or 42501 permission issue,
+        // it's a permanent security/permission failure. We should permanently discard ONLY this operation 
+        // to avoid infinite retries/spam and prevent clearing other completely valid offline sync operations.
+        final isPermanentError = e.toString().contains('row-level security policy') ||
+            e.toString().contains('42501') ||
+            e.toString().contains('Forbidden');
+
+        if (isPermanentError) {
+          debugPrint('🚫 RLS violation or Forbidden detected for operation ${operation.id}, permanently discarding to prevent clogging the sync queue.');
           removeFromQueue(operation.id);
+        } else {
+          operation.retryCount++;
+          if (operation.retryCount < 5) {
+            failedOperations.add(operation);
+          } else {
+            debugPrint('❌ SyncQueue: Max retries exceeded for ${operation.type.toString().split('.').last}');
+            removeFromQueue(operation.id);
+          }
         }
       }
     }
@@ -210,7 +224,8 @@ class SyncQueueService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('SyncQueue._executeOperation error: $e');
-      return false;
+      debugPrint('SyncQueue._executeOperation failed data payload: ${operation.data}');
+      rethrow;
     }
   }
 
@@ -263,4 +278,12 @@ class SyncQueueService extends ChangeNotifier {
   int get pendingCount => _queue.length;
   bool get isProcessing => _isProcessing;
   List<SyncOperation> get queue => List.unmodifiable(_queue);
+
+  /// Clear all pending sync operations
+  void clearQueue() {
+    _queue.clear();
+    _saveQueueToStorage();
+    notifyListeners();
+    debugPrint('🗑️ SyncQueue: Cleared all pending operations');
+  }
 }

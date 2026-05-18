@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/utils/streak_calculator.dart';
@@ -19,9 +20,11 @@ class HabitsCubit extends Cubit<HabitsState> {
     emit(HabitsLoading());
     try {
       final habits = await _habitService.getAllHabits();
+      debugPrint('Loaded ${habits.length} habits');
       final loadedState = await _buildLoadedState(habits);
       emit(loadedState);
     } catch (e) {
+      debugPrint('Error loading habits: $e');
       emit(HabitsError(e.toString()));
     }
   }

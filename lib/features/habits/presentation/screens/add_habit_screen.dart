@@ -1,4 +1,5 @@
 import 'package:bloomie/core/database/app_database.dart';
+import 'package:bloomie/features/auth/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
@@ -128,23 +129,27 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 ),
                 onPressed: () {
                   if (_nameController.text.isNotEmpty) {
-                    final habit = Habit(
-                      id: const Uuid().v4(),
-                      name: _nameController.text,
-                      emoji: _selectedEmoji,
-                      category: _selectedCategoryIndex,
-                      frequency: 0, // daily
-                      customDays: '[]',
-                      isSharedWithPartner: _isShared,
-                      iconBg: _selectedColor.toARGB32(),
-                      createdAt: DateTime.now(),
-                      isArchived: false,
-                      currentCount: 0,
-                      targetCount: _targetCount,
-                      streakCount: 0,
-                      longestStreak: 0,
-                      xpReward: 50,
-                    );
+                    // Get current user ID from Supabase
+                      final authService = AuthService();
+                      final userId = authService.currentUser?.id ?? 'me';
+                      final habit = Habit(
+                        id: const Uuid().v4(),
+                        userId: userId,
+                        name: _nameController.text,
+                        emoji: _selectedEmoji,
+                        category: _selectedCategoryIndex,
+                        frequency: 0, // daily
+                        customDays: '[]',
+                        isSharedWithPartner: _isShared,
+                        iconBg: _selectedColor.toARGB32(),
+                        createdAt: DateTime.now(),
+                        isArchived: false,
+                        currentCount: 0,
+                        targetCount: _targetCount,
+                        streakCount: 0,
+                        longestStreak: 0,
+                        xpReward: 50,
+                      );
                     context.read<HabitsCubit>().addHabit(habit);
                     Navigator.pop(context);
                   }

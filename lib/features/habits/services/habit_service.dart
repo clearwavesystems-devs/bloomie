@@ -55,18 +55,25 @@ class HabitService {
     }
 
     // Always query and return from local SQLite as the single source of truth
-    return await _db.getAllHabits();
+    final localUserId = userId ?? 'me'; // Default to 'me' if not logged in
+    debugPrint('Getting habits for user: $localUserId');
+    final habits = await _db.getAllHabits(localUserId);
+    debugPrint('Found ${habits.length} habits for user $localUserId');
+    return habits;
   }
 
   // ── Save Habit (Supabase + Local via SyncQueue) ─────────────────────────
 
   Future<void> saveHabit(Habit habit) async {
     // Always save locally for offline support (instant)
-    await _db.insertHabit(habit);
+    // Use actual user ID if available, otherwise keep 'me'
+    final userId = _currentUserId ?? habit.userId;
+    final habitWithUser = habit.copyWith(userId: userId);
+    await _db.insertHabit(habitWithUser);
 
-    final userId = _currentUserId;
-    if (userId != null) {
-      final habitMap = _habitToSupabaseMap(habit, userId);
+    // Sync to Supabase if user is logged in
+    if (_currentUserId != null) {
+      final habitMap = _habitToSupabaseMap(habitWithUser, _currentUserId!);
       _syncQueue.addToQueue(
         SyncOperation(
           id: 'create_habit_${habit.id}',
@@ -190,6 +197,7 @@ class HabitService {
   Habit _habitFromSupabase(Map<String, dynamic> row) {
     return Habit(
       id: row['id'] as String,
+      userId: row['user_id'] as String,
       name: row['name'] as String,
       emoji: row['emoji'] as String,
       category: row['category'] as int,
