@@ -11,6 +11,7 @@ import 'package:bloomie/features/duo/presentation/screens/duo_screen.dart';
 import 'package:bloomie/features/task/presentation/screens/task_screen.dart';
 import 'package:bloomie/features/journal/presentation/screens/journal_screen.dart';
 import 'package:bloomie/features/shop/presentation/screens/shop_screen.dart';
+import 'package:bloomie/features/shop/presentation/screens/wardrobe_screen.dart';
 import 'package:bloomie/features/adventure/presentation/screens/adventure_screen.dart';
 import 'package:bloomie/features/auth/presentation/screens/auth_screen.dart';
 import 'package:bloomie/features/auth/cubit/auth_cubit.dart';
@@ -104,6 +105,11 @@ class AppRouter {
         path: '/shop',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ShopScreen(),
+      ),
+      GoRoute(
+        path: '/wardrobe',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const WardrobeScreen(),
       ),
       GoRoute(
         path: '/adventure',

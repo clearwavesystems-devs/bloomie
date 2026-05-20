@@ -1,5 +1,8 @@
 import 'package:bloomie/features/garden/cubit/garden_cubit.dart';
 import 'package:bloomie/features/garden/cubit/garden_state.dart';
+import 'package:bloomie/features/shop/cubit/shop_cubit.dart';
+import 'package:bloomie/features/shop/cubit/shop_state.dart';
+import 'package:bloomie/core/theme/garden_themes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -21,10 +24,49 @@ class _GardenScreenState extends State<GardenScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('My Garden')),
-      body: BlocBuilder<GardenCubit, GardenState>(
-        builder: (context, state) {
+    return BlocBuilder<GardenCubit, GardenState>(
+      builder: (context, gardenState) {
+        // Get the current shop state to check equipped garden skin
+        final shopState = context.watch<ShopCubit>().state;
+        GardenTheme currentTheme;
+
+        if (shopState is ShopLoaded) {
+          final equippedSkin = shopState.items.where((i) =>
+            i.category == 'plant_skin' && i.equipped).firstOrNull;
+
+          // Map shop item ID to theme
+          currentTheme = GardenThemes.forPlantSkin(equippedSkin?.id ?? 'default');
+        } else {
+          currentTheme = GardenThemes.defaultTheme;
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              'My Garden',
+              style: TextStyle(
+                color: currentTheme.primaryText,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: IconThemeData(color: currentTheme.primaryText),
+          ),
+          body: Container(
+            decoration: BoxDecoration(
+              color: currentTheme.backgroundColor,
+              // Apply gradient if theme has one
+              gradient: currentTheme.gradientColors.isNotEmpty
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: currentTheme.gradientColors,
+                    )
+                  : null,
+            ),
+            child: BlocBuilder<GardenCubit, GardenState>(
+              builder: (context, state) {
           if (state is GardenLoaded) {
             return GridView.builder(
               padding: const EdgeInsets.all(20),
@@ -80,7 +122,9 @@ class _GardenScreenState extends State<GardenScreen> {
           return const Center(child: CircularProgressIndicator());
         },
       ),
+          ),
     );
+    });
   }
 }
 
@@ -100,7 +144,7 @@ class _PlantCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.watch<GardenTheme>().cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -127,7 +171,13 @@ class _PlantCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            name,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black,
+            ),
+          ),
           const SizedBox(height: 8),
           if (!isLocked) ...[
             Padding(
@@ -141,7 +191,10 @@ class _PlantCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${(growth * 100).toInt()}% grown',
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 10,
+                color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6) ?? Colors.grey,
+              ),
             ),
           ] else
             const Text(

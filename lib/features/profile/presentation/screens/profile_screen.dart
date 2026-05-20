@@ -461,6 +461,22 @@ class _PetCompanionPanel extends StatelessWidget {
                       ),
                     ),
                   ),
+                    SizedBox(width: 12.w),
+                    GestureDetector(
+                      onTap: () => context.push("/wardrobe"),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                        decoration: BoxDecoration(color: AppColors.pinkLight, borderRadius: BorderRadius.circular(12)),
+                        child: Text(
+                          "👗 Wardrobe",
+                          style: GoogleFonts.nunito(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryPink,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
               SizedBox(height: 16.h),
