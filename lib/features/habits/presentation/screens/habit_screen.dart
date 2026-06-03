@@ -37,6 +37,19 @@ class _HabitScreenState extends State<HabitScreen> {
     context.read<GardenCubit>().init();
     context.read<ProfileCubit>().loadProfile();
     context.read<ShopCubit>().loadShop(); // Load equipped accessories for pet
+    // Sync equipped accessories to ProfileCubit for effect calculations
+    _syncEquippedAccessories();
+  }
+
+  void _syncEquippedAccessories() {
+    final shopState = context.read<ShopCubit>().state;
+    if (shopState is ShopLoaded) {
+      final equippedIds = shopState.items
+          .where((i) => i.equipped)
+          .map((i) => i.id)
+          .toList();
+      context.read<ProfileCubit>().updateEquippedAccessories(equippedIds);
+    }
   }
 
   @override

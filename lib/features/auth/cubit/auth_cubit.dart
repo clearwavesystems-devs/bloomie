@@ -25,7 +25,31 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (e, stack) {
       debugPrint('AuthCubit.checkSession Error: $e');
       debugPrint('StackTrace: $stack');
-      emit(AuthUnauthenticated());
+
+      // If the user has a valid local session but we can't reach the server
+      // (e.g. no internet on startup), keep them authenticated with cached
+      // data rather than booting them to the login screen.
+      final isNetworkError = e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('ClientException') ||
+          e.toString().contains('AuthRetryableFetchException');
+
+      if (isNetworkError && _authService.isSignedIn) {
+        debugPrint('AuthCubit.checkSession: Network error but local session exists — staying authenticated offline.');
+        // ProfileCubit starts in ProfileInitial at cold-start, so cachedUser
+        // is null. Load from SharedPreferences first, then read it back.
+        await _profileCubit.loadProfile();
+        final cachedUser = _profileCubit.cachedUser;
+        if (cachedUser != null) {
+          emit(AuthAuthenticated(cachedUser));
+        } else {
+          // No cached profile at all — treat as unauthenticated so the user
+          // can sign in fresh when connectivity is restored.
+          emit(AuthUnauthenticated());
+        }
+      } else {
+        emit(AuthUnauthenticated());
+      }
     }
   }
 

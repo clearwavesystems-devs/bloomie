@@ -117,6 +117,60 @@ class GardenThemes {
     patternEmoji: '🌸', // Sakura pattern
   );
 
+  /// Spooky theme
+  static const GardenTheme spookyTheme = GardenTheme(
+    id: 'skin_spooky',
+    name: 'Spooky Garden',
+    description: 'Eerie and mysterious night garden',
+    backgroundColor: Color(0xFF1E102F), // Dark purple
+    cardColor: Color(0xFF2C193E), // Muted dark purple card
+    accentColor: Color(0xFFFF9800), // Spooky orange
+    primaryText: Colors.white, // Light text
+    secondaryText: Color(0xFF9E9E9E), // Muted grey
+    gradientColors: [
+      Color(0xFF1E102F),
+      Color(0xFF0F0818),
+    ],
+    hasPattern: true,
+    patternEmoji: '🎃', // Jack-o'-lantern pattern
+  );
+
+  /// Winter theme
+  static const GardenTheme winterTheme = GardenTheme(
+    id: 'skin_winter',
+    name: 'Frozen Garden',
+    description: 'Chilly snow-covered winter garden',
+    backgroundColor: Color(0xFFECEFF1), // Snowy light grey
+    cardColor: Colors.white, // White snow card
+    accentColor: Color(0xFF00B0FF), // Frosty blue accent
+    primaryText: Color(0xFF263238), // Dark slate text
+    secondaryText: Color(0xFF78909C), // Snowy blue-grey text
+    gradientColors: [
+      Color(0xFFECEFF1),
+      Color(0xFFCFD8DC),
+    ],
+    hasPattern: true,
+    patternEmoji: '❄️', // Snowflake pattern
+  );
+
+  /// Gingerbread theme
+  static const GardenTheme gingerbreadTheme = GardenTheme(
+    id: 'skin_gingerbread',
+    name: 'Gingerbread Garden',
+    description: 'Sweet holiday cookie garden',
+    backgroundColor: Color(0xFFFFF3E0), // Warm cream
+    cardColor: Color(0xFFFFCC80), // Warm brown ginger card
+    accentColor: Color(0xFFE53935), // Candy cane red accent
+    primaryText: Color(0xFF5D4037), // Chocolate text
+    secondaryText: Color(0xFF8D6E63), // Cookie brown text
+    gradientColors: [
+      Color(0xFFFFF3E0),
+      Color(0xFFFFE0B2),
+    ],
+    hasPattern: true,
+    patternEmoji: '🏠', // Gingerbread house pattern
+  );
+
   /// Get all available themes
   static List<GardenTheme> get allThemes => [
     defaultTheme,
@@ -124,6 +178,9 @@ class GardenThemes {
     crystalBloomTheme,
     rainbowFlowerTheme,
     cherryBlossomTheme,
+    spookyTheme,
+    winterTheme,
+    gingerbreadTheme,
   ];
 
   /// Get theme by ID
@@ -137,14 +194,25 @@ class GardenThemes {
   /// Get theme for a plant skin (maps ShopItem.id to theme)
   static GardenTheme forPlantSkin(String skinId) {
     switch (skinId) {
+      case 'skin_golden_rose':
       case 'plant_skin_golden_rose':
         return goldenRoseTheme;
+      case 'skin_crystal':
       case 'plant_skin_crystal_bloom':
         return crystalBloomTheme;
+      case 'skin_rainbow':
       case 'plant_skin_rainbow_flower':
         return rainbowFlowerTheme;
+      case 'skin_cherry':
       case 'plant_skin_cherry_blossom':
         return cherryBlossomTheme;
+      case 'skin_pumpkin':
+      case 'skin_spooky':
+        return spookyTheme;
+      case 'skin_winter':
+        return winterTheme;
+      case 'skin_gingerbread':
+        return gingerbreadTheme;
       default:
         return defaultTheme;
     }

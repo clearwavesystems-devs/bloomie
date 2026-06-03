@@ -3,10 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../auth/models/user_model.dart';
 import '../../auth/services/auth_service.dart';
 import 'profile_state.dart';
+import '../../shop/models/accessory_effects.dart';
 
 class ProfileCubit extends Cubit<ProfileState> {
   static const String _userKey = 'user_profile';
   final AuthService _authService;
+  List<String> _equippedAccessories = [];
 
   ProfileCubit(this._authService) : super(ProfileInitial());
 
@@ -65,10 +67,19 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   // ── XP ─────────────────────────────────────
 
-  Future<void> addXP(int amount) async {
+  Future<void> addXP(int amount, {bool isFocusTask = false}) async {
     if (state is! ProfileLoaded) return;
     final user = (state as ProfileLoaded).user;
-    final newXP = user.xp + amount;
+
+    // Apply accessory XP multiplier
+    final xpMultiplier = AccessoryEffects.calculateXPMultiplier(
+      _equippedAccessories,
+      isFocusTask: isFocusTask,
+      isDuoActive: user.duoPartnerId != null && user.duoPartnerId!.isNotEmpty,
+    );
+    final boostedAmount = (amount * xpMultiplier).toInt();
+
+    final newXP = user.xp + boostedAmount;
     final newLevel = (newXP ~/ 500) + 1;
 
     final updated = user.copyWith(xp: newXP, level: newLevel);
@@ -81,9 +92,33 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> addBlooms(int amount) async {
     if (state is! ProfileLoaded) return;
     final user = (state as ProfileLoaded).user;
-    final updated = user.copyWith(totalBlooms: user.totalBlooms + amount);
+
+    // Apply accessory Bloom multiplier
+    final bloomMultiplier = AccessoryEffects.calculateBloomMultiplier(
+      _equippedAccessories,
+      isDuoActive: user.duoPartnerId != null && user.duoPartnerId!.isNotEmpty,
+    );
+    final boostedAmount = (amount * bloomMultiplier).toInt();
+
+    final updated = user.copyWith(totalBlooms: user.totalBlooms + boostedAmount);
     await saveProfile(updated);
     emit(ProfileLoaded(updated));
+  }
+
+  // ── Equipped Accessories Management ─────────────
+
+  void updateEquippedAccessories(List<String> accessoryIds) {
+    _equippedAccessories = accessoryIds;
+  }
+
+  List<String> getEquippedAccessories() => _equippedAccessories;
+
+  bool hasStreakProtection() {
+    return AccessoryEffects.hasStreakProtection(_equippedAccessories);
+  }
+
+  bool hasMoodBoost() {
+    return AccessoryEffects.hasMoodBoost(_equippedAccessories);
   }
 
   Future<bool> deductBlooms(int amount) async {
@@ -98,6 +133,14 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   // ── Helpers ────────────────────────────────
+
+  /// Returns the currently loaded user, or null if the profile hasn't been
+  /// loaded yet. Useful for offline fallback in AuthCubit.
+  UserModel? get cachedUser {
+    final s = state;
+    if (s is ProfileLoaded) return s.user;
+    return null;
+  }
 
   String getLevelTitle(int level) {
     if (level <= 5) return 'Seedling';

@@ -348,7 +348,11 @@ class _SettingsSection extends StatelessWidget {
           trailing: const Icon(SolarIconsOutline.altArrowRight),
           onTap: () => _showAccountSettingsSheet(context),
         ),
-        ListTile(leading: const Icon(SolarIconsOutline.questionCircle), title: const Text('Help & Support'), onTap: () {}),
+        ListTile(
+          leading: const Icon(SolarIconsOutline.questionCircle),
+          title: const Text('Help & Support'),
+          onTap: () {},
+        ),
         const Divider(height: 32, thickness: 1),
         ListTile(
           leading: const Icon(SolarIconsOutline.logout, color: AppColors.primaryPink),
@@ -438,48 +442,16 @@ class _PetCompanionPanel extends StatelessWidget {
             ],
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Text(
-                    '🐰 My Companion',
-                    style: GoogleFonts.baloo2(fontSize: 16.sp, fontWeight: FontWeight.w800, color: AppColors.textDark),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => context.push('/shop'),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                      decoration: BoxDecoration(color: AppColors.pinkLight, borderRadius: BorderRadius.circular(12)),
-                      child: Text(
-                        '✨ Boutique',
-                        style: GoogleFonts.nunito(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryPink,
-                        ),
-                      ),
-                    ),
-                  ),
-                    SizedBox(width: 12.w),
-                    GestureDetector(
-                      onTap: () => context.push("/wardrobe"),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                        decoration: BoxDecoration(color: AppColors.pinkLight, borderRadius: BorderRadius.circular(12)),
-                        child: Text(
-                          "👗 Wardrobe",
-                          style: GoogleFonts.nunito(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryPink,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+              // Title
+              Text(
+                '🐰 My Companion',
+                style: GoogleFonts.baloo2(fontSize: 16.sp, fontWeight: FontWeight.w800, color: AppColors.textDark),
               ),
               SizedBox(height: 16.h),
+
+              // Companion view
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -525,21 +497,23 @@ class _PetCompanionPanel extends StatelessWidget {
                           ],
                         ),
                         SizedBox(height: 8.h),
-                        Row(
-                          children: [
-                            Text(
-                              '👗 Wearing: ',
-                              style: GoogleFonts.nunito(fontSize: 12.sp, color: AppColors.textMuted),
-                            ),
-                            Text(
-                              '$accessoryEmoji $accessoryName',
-                              style: GoogleFonts.nunito(
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textDark,
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '👗 Wearing: ',
+                                style: GoogleFonts.nunito(fontSize: 12.sp, color: AppColors.textMuted),
                               ),
-                            ),
-                          ],
+                              TextSpan(
+                                text: '$accessoryEmoji $accessoryName',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         SizedBox(height: 6.h),
                         Text(
@@ -551,10 +525,59 @@ class _PetCompanionPanel extends StatelessWidget {
                   ),
                 ],
               ),
+              SizedBox(height: 20.h),
+
+              // Action Buttons Row
+              Row(
+                children: [
+                  Expanded(
+                    child: _CompanionButton(label: 'Boutique', emoji: '✨', onTap: () => context.push('/shop')),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: _CompanionButton(label: 'Wardrobe', emoji: '👗', onTap: () => context.push('/wardrobe')),
+                  ),
+                ],
+              ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _CompanionButton extends StatelessWidget {
+  final String label;
+  final String emoji;
+  final VoidCallback onTap;
+
+  const _CompanionButton({required this.label, required this.emoji, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16.r),
+      child: Ink(
+        padding: EdgeInsets.symmetric(vertical: 10.h),
+        decoration: BoxDecoration(
+          color: AppColors.pinkLight,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: AppColors.primaryPink.withValues(alpha: 0.1)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: TextStyle(fontSize: 13.sp)),
+            SizedBox(width: 6.w),
+            Text(
+              label,
+              style: GoogleFonts.nunito(fontSize: 13.sp, fontWeight: FontWeight.bold, color: AppColors.primaryPink),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

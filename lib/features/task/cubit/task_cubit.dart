@@ -91,7 +91,8 @@ class TaskCubit extends Cubit<TaskState> {
       final task = current.activeTasks.firstWhere((t) => t.id == id);
       
       // Stop timer if it was running for this task
-      if (current.activeTimerTaskId == id) {
+      final wasTimerRunning = current.activeTimerTaskId == id;
+      if (wasTimerRunning) {
         stopTimer();
       }
 
@@ -104,7 +105,7 @@ class TaskCubit extends Cubit<TaskState> {
       await _taskService.updateTask(updated);
 
       // Award rewards through ProfileCubit
-      await _profileCubit.addXP(task.xpReward);
+      await _profileCubit.addXP(task.xpReward, isFocusTask: wasTimerRunning || task.estimatedMinutes != null);
       await _profileCubit.addBlooms(task.bloomReward);
 
       // Reload

@@ -153,7 +153,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -204,6 +204,9 @@ class AppDatabase extends _$AppDatabase {
         }
         // Migrate existing tasks to have 'me' as user_id
         await customStatement("UPDATE tasks SET user_id = 'me' WHERE user_id IS NULL");
+      }
+      if (from < 6) {
+        await _seedShopItems();
       }
     },
   );
@@ -530,6 +533,211 @@ class AppDatabase extends _$AppDatabase {
         emoji: '☁️',
         price: 600,
         category: 'adventure_key',
+        owned: false,
+        equipped: false,
+      ),
+      // 🎃 HALLOWEEN SPECIALS
+      ShopItem(
+        id: 'acc_pumpkin_hat',
+        name: 'Pumpkin Hat',
+        emoji: '🎃',
+        price: 150,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_ghost_ears',
+        name: 'Ghost Ears',
+        emoji: '👻',
+        price: 200,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_witch_hat',
+        name: 'Witch Hat',
+        emoji: '🧙‍♀️',
+        price: 250,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_bat_wings',
+        name: 'Bat Wings',
+        emoji: '🦇',
+        price: 350,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_spider_kitten',
+        name: 'Spider Kitten',
+        emoji: '🕷️',
+        price: 180,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      // ❄️ WINTER SPECIALS
+      ShopItem(
+        id: 'acc_santa_hat',
+        name: 'Santa Hat',
+        emoji: '🎅',
+        price: 200,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_earmuffs',
+        name: 'Earmuffs',
+        emoji: '🧣',
+        price: 120,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_snowflakes',
+        name: 'Snowflake Charm',
+        emoji: '❄️',
+        price: 180,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_reindeer_antlers',
+        name: 'Reindeer Antlers',
+        emoji: '🦌',
+        price: 300,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      // MORE GARDEN SKINS
+      ShopItem(
+        id: 'skin_pumpkin',
+        name: 'Pumpkin Patch',
+        emoji: '🎃',
+        price: 200,
+        category: 'plant_skin',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'skin_winter',
+        name: 'Frozen Garden',
+        emoji: '❄️',
+        price: 300,
+        category: 'plant_skin',
+        owned: false,
+        equipped: false,
+      ),
+      // ADDITIONAL ADVENTURE KEYS
+      ShopItem(
+        id: 'key_forest',
+        name: 'Forest Key',
+        emoji: '🌲',
+        price: 400,
+        category: 'adventure_key',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'key_marsh',
+        name: 'Marsh Key',
+        emoji: '🌙',
+        price: 700,
+        category: 'adventure_key',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'key_cosmos',
+        name: 'Cosmos Key',
+        emoji: '🌌',
+        price: 1000,
+        category: 'adventure_key',
+        owned: false,
+        equipped: false,
+      ),
+      // 🎃 NEW HALLOWEEN SPECIALS
+      ShopItem(
+        id: 'acc_candy_basket',
+        name: 'Candy Basket',
+        emoji: '🍬',
+        price: 100,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_vampire_cape',
+        name: 'Vampire Cape',
+        emoji: '🧛',
+        price: 280,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_franken_bolts',
+        name: 'Frankie Bolts',
+        emoji: '🔩',
+        price: 140,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      // ❄️ NEW WINTER SPECIALS
+      ShopItem(
+        id: 'acc_snowman_scarf',
+        name: 'Snowman Scarf',
+        emoji: '☃️',
+        price: 130,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_elf_ears',
+        name: 'Elf Hat & Ears',
+        emoji: '🧝',
+        price: 220,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_ice_crown',
+        name: 'Ice Crown',
+        emoji: '❄️',
+        price: 350,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      // NEW GARDEN SKINS
+      ShopItem(
+        id: 'skin_spooky',
+        name: 'Spooky Mansion',
+        emoji: '🪦',
+        price: 250,
+        category: 'plant_skin',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'skin_gingerbread',
+        name: 'Gingerbread House',
+        emoji: '🏠',
+        price: 280,
+        category: 'plant_skin',
         owned: false,
         equipped: false,
       ),
