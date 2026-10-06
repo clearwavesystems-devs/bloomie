@@ -56,7 +56,8 @@ class TaskService {
     }
 
     // Always query and return from local SQLite as the single source of truth
-    return _db.getActiveTasks();
+    final localUserId = _currentUserId ?? 'me';
+    return _db.getActiveTasks(localUserId);
   }
 
   Future<List<Task>> getCompletedTasks() async {
@@ -80,23 +81,26 @@ class TaskService {
     }
 
     // Always query and return from local SQLite as the single source of truth
-    return _db.getCompletedTasks();
+    final localUserId = _currentUserId ?? 'me';
+    return _db.getCompletedTasks(localUserId);
   }
 
   // ── Save Task (Local first, then Supabase via SyncQueue) ───────────────────
 
   Future<void> saveTask(Task task) async {
-    // Save locally first (instant)
-    await _db.insertTask(task);
+    // Always save locally for offline support (instant)
+    // Use actual user ID if available, otherwise keep 'me'
+    final userId = _currentUserId ?? task.userId;
+    final taskWithUser = task.copyWith(userId: userId);
+    await _db.insertTask(taskWithUser);
 
     // Sync to Supabase in background via SyncQueue
-    final userId = _currentUserId;
-    if (userId != null) {
+    if (_currentUserId != null) {
       _syncQueue.addToQueue(
         SyncOperation(
           id: 'create_task_${task.id}',
           type: SyncOperationType.createTask,
-          data: _taskToSupabaseMap(task, userId),
+          data: _taskToSupabaseMap(taskWithUser, _currentUserId!),
           createdAt: DateTime.now(),
         ),
       );
@@ -109,17 +113,18 @@ class TaskService {
   // ── Update Task (Local first, then Supabase via SyncQueue) ─────────────────
 
   Future<void> updateTask(Task task) async {
-    // Update locally first (instant)
-    await _db.updateTask(task);
+    // Always save locally (instant)
+    final userId = _currentUserId ?? task.userId;
+    final taskWithUser = task.copyWith(userId: userId);
+    await _db.updateTask(taskWithUser);
 
     // Sync to Supabase in background via SyncQueue
-    final userId = _currentUserId;
-    if (userId != null) {
+    if (_currentUserId != null) {
       _syncQueue.addToQueue(
         SyncOperation(
           id: 'update_task_${task.id}',
           type: SyncOperationType.updateTask,
-          data: _taskToSupabaseMap(task, userId),
+          data: _taskToSupabaseMap(taskWithUser, _currentUserId!),
           createdAt: DateTime.now(),
         ),
       );
@@ -214,6 +219,7 @@ class TaskService {
   Task _taskFromSupabase(Map<String, dynamic> row) {
     return Task(
       id: row['id'] as String,
+      userId: row['user_id'] as String,
       title: row['title'] as String,
       description: row['description'] as String?,
       xpReward: row['xp_reward'] as int? ?? 20,

@@ -160,45 +160,47 @@ class _TaskScreenState extends State<TaskScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Task Quest',
-                                style: GoogleFonts.baloo2(
-                                  fontSize: 28.sp,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textDark,
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  const SyncStatusBadge(),
-                                  SizedBox(width: 8.w),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 12.w,
-                                      vertical: 6.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.6,
-                                      ),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: Colors.white),
-                                    ),
-                                    child: Text(
-                                      '✨ $todayXp XP Today',
-                                      style: GoogleFonts.nunito(
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.textDark,
-                                      ),
-                                    ),
+                          FittedBox(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Task Quest',
+                                  style: GoogleFonts.baloo2(
+                                    fontSize: 28.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textDark,
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                                Row(
+                                  children: [
+                                    const SyncStatusBadge(),
+                                    SizedBox(width: 8.w),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 12.w,
+                                        vertical: 6.h,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: Colors.white),
+                                      ),
+                                      child: Text(
+                                        '✨ $todayXp XP Today',
+                                        style: GoogleFonts.nunito(
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textDark,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                           SizedBox(height: 8.h),
                           Text(

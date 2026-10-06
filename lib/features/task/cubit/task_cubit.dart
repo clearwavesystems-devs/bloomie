@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart';
 import '../../../core/database/app_database.dart';
 import '../../profile/cubit/profile_cubit.dart';
+import '../../profile/cubit/profile_state.dart';
 import '../services/task_service.dart';
 import 'task_state.dart';
 
@@ -41,8 +42,16 @@ class TaskCubit extends Cubit<TaskState> {
     int? estimatedMinutes,
   }) async {
     try {
+      // Get user ID from profile
+      final profileState = _profileCubit.state;
+      if (profileState is! ProfileLoaded) {
+        emit(TaskError('User profile not loaded'));
+        return;
+      }
+
       final task = Task(
         id: const Uuid().v4(),
+        userId: profileState.user.id,
         title: title,
         description: description,
         xpReward: xpReward,
@@ -82,7 +91,8 @@ class TaskCubit extends Cubit<TaskState> {
       final task = current.activeTasks.firstWhere((t) => t.id == id);
       
       // Stop timer if it was running for this task
-      if (current.activeTimerTaskId == id) {
+      final wasTimerRunning = current.activeTimerTaskId == id;
+      if (wasTimerRunning) {
         stopTimer();
       }
 
@@ -95,7 +105,6 @@ class TaskCubit extends Cubit<TaskState> {
       await _taskService.updateTask(updated);
 
       // Award rewards through ProfileCubit
-      await _profileCubit.addXP(task.xpReward);
       await _profileCubit.addBlooms(task.bloomReward);
 
       // Reload

@@ -17,6 +17,16 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('me'),
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -204,6 +214,7 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    userId,
     name,
     emoji,
     category,
@@ -237,6 +248,12 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -380,6 +397,10 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -455,6 +476,7 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
 
 class Habit extends DataClass implements Insertable<Habit> {
   final String id;
+  final String userId;
   final String name;
   final String emoji;
   final int category;
@@ -473,6 +495,7 @@ class Habit extends DataClass implements Insertable<Habit> {
   final int xpReward;
   const Habit({
     required this.id,
+    required this.userId,
     required this.name,
     required this.emoji,
     required this.category,
@@ -494,6 +517,7 @@ class Habit extends DataClass implements Insertable<Habit> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
     map['name'] = Variable<String>(name);
     map['emoji'] = Variable<String>(emoji);
     map['category'] = Variable<int>(category);
@@ -520,6 +544,7 @@ class Habit extends DataClass implements Insertable<Habit> {
   HabitsCompanion toCompanion(bool nullToAbsent) {
     return HabitsCompanion(
       id: Value(id),
+      userId: Value(userId),
       name: Value(name),
       emoji: Value(emoji),
       category: Value(category),
@@ -550,6 +575,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Habit(
       id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
       name: serializer.fromJson<String>(json['name']),
       emoji: serializer.fromJson<String>(json['emoji']),
       category: serializer.fromJson<int>(json['category']),
@@ -575,6 +601,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
       'name': serializer.toJson<String>(name),
       'emoji': serializer.toJson<String>(emoji),
       'category': serializer.toJson<int>(category),
@@ -596,6 +623,7 @@ class Habit extends DataClass implements Insertable<Habit> {
 
   Habit copyWith({
     String? id,
+    String? userId,
     String? name,
     String? emoji,
     int? category,
@@ -614,6 +642,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     int? xpReward,
   }) => Habit(
     id: id ?? this.id,
+    userId: userId ?? this.userId,
     name: name ?? this.name,
     emoji: emoji ?? this.emoji,
     category: category ?? this.category,
@@ -636,6 +665,7 @@ class Habit extends DataClass implements Insertable<Habit> {
   Habit copyWithCompanion(HabitsCompanion data) {
     return Habit(
       id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
       name: data.name.present ? data.name.value : this.name,
       emoji: data.emoji.present ? data.emoji.value : this.emoji,
       category: data.category.present ? data.category.value : this.category,
@@ -677,6 +707,7 @@ class Habit extends DataClass implements Insertable<Habit> {
   String toString() {
     return (StringBuffer('Habit(')
           ..write('id: $id, ')
+          ..write('userId: $userId, ')
           ..write('name: $name, ')
           ..write('emoji: $emoji, ')
           ..write('category: $category, ')
@@ -700,6 +731,7 @@ class Habit extends DataClass implements Insertable<Habit> {
   @override
   int get hashCode => Object.hash(
     id,
+    userId,
     name,
     emoji,
     category,
@@ -722,6 +754,7 @@ class Habit extends DataClass implements Insertable<Habit> {
       identical(this, other) ||
       (other is Habit &&
           other.id == this.id &&
+          other.userId == this.userId &&
           other.name == this.name &&
           other.emoji == this.emoji &&
           other.category == this.category &&
@@ -742,6 +775,7 @@ class Habit extends DataClass implements Insertable<Habit> {
 
 class HabitsCompanion extends UpdateCompanion<Habit> {
   final Value<String> id;
+  final Value<String> userId;
   final Value<String> name;
   final Value<String> emoji;
   final Value<int> category;
@@ -761,6 +795,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
   final Value<int> rowid;
   const HabitsCompanion({
     this.id = const Value.absent(),
+    this.userId = const Value.absent(),
     this.name = const Value.absent(),
     this.emoji = const Value.absent(),
     this.category = const Value.absent(),
@@ -781,6 +816,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
   });
   HabitsCompanion.insert({
     required String id,
+    this.userId = const Value.absent(),
     required String name,
     required String emoji,
     required int category,
@@ -807,6 +843,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
        iconBg = Value(iconBg);
   static Insertable<Habit> custom({
     Expression<String>? id,
+    Expression<String>? userId,
     Expression<String>? name,
     Expression<String>? emoji,
     Expression<int>? category,
@@ -827,6 +864,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
       if (name != null) 'name': name,
       if (emoji != null) 'emoji': emoji,
       if (category != null) 'category': category,
@@ -850,6 +888,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
 
   HabitsCompanion copyWith({
     Value<String>? id,
+    Value<String>? userId,
     Value<String>? name,
     Value<String>? emoji,
     Value<int>? category,
@@ -870,6 +909,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
   }) {
     return HabitsCompanion(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       name: name ?? this.name,
       emoji: emoji ?? this.emoji,
       category: category ?? this.category,
@@ -895,6 +935,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -954,6 +997,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
   String toString() {
     return (StringBuffer('HabitsCompanion(')
           ..write('id: $id, ')
+          ..write('userId: $userId, ')
           ..write('name: $name, ')
           ..write('emoji: $emoji, ')
           ..write('category: $category, ')
@@ -2439,6 +2483,16 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('me'),
+  );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -2544,6 +2598,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    userId,
     title,
     description,
     xpReward,
@@ -2570,6 +2625,12 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -2652,6 +2713,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}title'],
@@ -2699,6 +2764,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
 
 class Task extends DataClass implements Insertable<Task> {
   final String id;
+  final String userId;
   final String title;
   final String? description;
   final int xpReward;
@@ -2710,6 +2776,7 @@ class Task extends DataClass implements Insertable<Task> {
   final int? estimatedMinutes;
   const Task({
     required this.id,
+    required this.userId,
     required this.title,
     this.description,
     required this.xpReward,
@@ -2724,6 +2791,7 @@ class Task extends DataClass implements Insertable<Task> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
     map['title'] = Variable<String>(title);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
@@ -2747,6 +2815,7 @@ class Task extends DataClass implements Insertable<Task> {
   TasksCompanion toCompanion(bool nullToAbsent) {
     return TasksCompanion(
       id: Value(id),
+      userId: Value(userId),
       title: Value(title),
       description: description == null && nullToAbsent
           ? const Value.absent()
@@ -2774,6 +2843,7 @@ class Task extends DataClass implements Insertable<Task> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Task(
       id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
       title: serializer.fromJson<String>(json['title']),
       description: serializer.fromJson<String?>(json['description']),
       xpReward: serializer.fromJson<int>(json['xpReward']),
@@ -2790,6 +2860,7 @@ class Task extends DataClass implements Insertable<Task> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
       'title': serializer.toJson<String>(title),
       'description': serializer.toJson<String?>(description),
       'xpReward': serializer.toJson<int>(xpReward),
@@ -2804,6 +2875,7 @@ class Task extends DataClass implements Insertable<Task> {
 
   Task copyWith({
     String? id,
+    String? userId,
     String? title,
     Value<String?> description = const Value.absent(),
     int? xpReward,
@@ -2815,6 +2887,7 @@ class Task extends DataClass implements Insertable<Task> {
     Value<int?> estimatedMinutes = const Value.absent(),
   }) => Task(
     id: id ?? this.id,
+    userId: userId ?? this.userId,
     title: title ?? this.title,
     description: description.present ? description.value : this.description,
     xpReward: xpReward ?? this.xpReward,
@@ -2830,6 +2903,7 @@ class Task extends DataClass implements Insertable<Task> {
   Task copyWithCompanion(TasksCompanion data) {
     return Task(
       id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
       title: data.title.present ? data.title.value : this.title,
       description: data.description.present
           ? data.description.value
@@ -2854,6 +2928,7 @@ class Task extends DataClass implements Insertable<Task> {
   String toString() {
     return (StringBuffer('Task(')
           ..write('id: $id, ')
+          ..write('userId: $userId, ')
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('xpReward: $xpReward, ')
@@ -2870,6 +2945,7 @@ class Task extends DataClass implements Insertable<Task> {
   @override
   int get hashCode => Object.hash(
     id,
+    userId,
     title,
     description,
     xpReward,
@@ -2885,6 +2961,7 @@ class Task extends DataClass implements Insertable<Task> {
       identical(this, other) ||
       (other is Task &&
           other.id == this.id &&
+          other.userId == this.userId &&
           other.title == this.title &&
           other.description == this.description &&
           other.xpReward == this.xpReward &&
@@ -2898,6 +2975,7 @@ class Task extends DataClass implements Insertable<Task> {
 
 class TasksCompanion extends UpdateCompanion<Task> {
   final Value<String> id;
+  final Value<String> userId;
   final Value<String> title;
   final Value<String?> description;
   final Value<int> xpReward;
@@ -2910,6 +2988,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<int> rowid;
   const TasksCompanion({
     this.id = const Value.absent(),
+    this.userId = const Value.absent(),
     this.title = const Value.absent(),
     this.description = const Value.absent(),
     this.xpReward = const Value.absent(),
@@ -2923,6 +3002,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   });
   TasksCompanion.insert({
     required String id,
+    this.userId = const Value.absent(),
     required String title,
     this.description = const Value.absent(),
     this.xpReward = const Value.absent(),
@@ -2937,6 +3017,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
        title = Value(title);
   static Insertable<Task> custom({
     Expression<String>? id,
+    Expression<String>? userId,
     Expression<String>? title,
     Expression<String>? description,
     Expression<int>? xpReward,
@@ -2950,6 +3031,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
       if (title != null) 'title': title,
       if (description != null) 'description': description,
       if (xpReward != null) 'xp_reward': xpReward,
@@ -2965,6 +3047,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
 
   TasksCompanion copyWith({
     Value<String>? id,
+    Value<String>? userId,
     Value<String>? title,
     Value<String?>? description,
     Value<int>? xpReward,
@@ -2978,6 +3061,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   }) {
     return TasksCompanion(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       title: title ?? this.title,
       description: description ?? this.description,
       xpReward: xpReward ?? this.xpReward,
@@ -2996,6 +3080,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -3034,6 +3121,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   String toString() {
     return (StringBuffer('TasksCompanion(')
           ..write('id: $id, ')
+          ..write('userId: $userId, ')
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('xpReward: $xpReward, ')
@@ -4355,6 +4443,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$HabitsTableCreateCompanionBuilder =
     HabitsCompanion Function({
       required String id,
+      Value<String> userId,
       required String name,
       required String emoji,
       required int category,
@@ -4376,6 +4465,7 @@ typedef $$HabitsTableCreateCompanionBuilder =
 typedef $$HabitsTableUpdateCompanionBuilder =
     HabitsCompanion Function({
       Value<String> id,
+      Value<String> userId,
       Value<String> name,
       Value<String> emoji,
       Value<int> category,
@@ -4429,6 +4519,11 @@ class $$HabitsTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4552,6 +4647,11 @@ class $$HabitsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -4644,6 +4744,9 @@ class $$HabitsTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -4766,6 +4869,7 @@ class $$HabitsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> emoji = const Value.absent(),
                 Value<int> category = const Value.absent(),
@@ -4785,6 +4889,7 @@ class $$HabitsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => HabitsCompanion(
                 id: id,
+                userId: userId,
                 name: name,
                 emoji: emoji,
                 category: category,
@@ -4806,6 +4911,7 @@ class $$HabitsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                Value<String> userId = const Value.absent(),
                 required String name,
                 required String emoji,
                 required int category,
@@ -4825,6 +4931,7 @@ class $$HabitsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => HabitsCompanion.insert(
                 id: id,
+                userId: userId,
                 name: name,
                 emoji: emoji,
                 category: category,
@@ -5978,6 +6085,7 @@ typedef $$PlantsTableProcessedTableManager =
 typedef $$TasksTableCreateCompanionBuilder =
     TasksCompanion Function({
       required String id,
+      Value<String> userId,
       required String title,
       Value<String?> description,
       Value<int> xpReward,
@@ -5992,6 +6100,7 @@ typedef $$TasksTableCreateCompanionBuilder =
 typedef $$TasksTableUpdateCompanionBuilder =
     TasksCompanion Function({
       Value<String> id,
+      Value<String> userId,
       Value<String> title,
       Value<String?> description,
       Value<int> xpReward,
@@ -6014,6 +6123,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6077,6 +6191,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get title => $composableBuilder(
     column: $table.title,
     builder: (column) => ColumnOrderings(column),
@@ -6134,6 +6253,9 @@ class $$TasksTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
@@ -6200,6 +6322,7 @@ class $$TasksTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<int> xpReward = const Value.absent(),
@@ -6212,6 +6335,7 @@ class $$TasksTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => TasksCompanion(
                 id: id,
+                userId: userId,
                 title: title,
                 description: description,
                 xpReward: xpReward,
@@ -6226,6 +6350,7 @@ class $$TasksTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                Value<String> userId = const Value.absent(),
                 required String title,
                 Value<String?> description = const Value.absent(),
                 Value<int> xpReward = const Value.absent(),
@@ -6238,6 +6363,7 @@ class $$TasksTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => TasksCompanion.insert(
                 id: id,
+                userId: userId,
                 title: title,
                 description: description,
                 xpReward: xpReward,

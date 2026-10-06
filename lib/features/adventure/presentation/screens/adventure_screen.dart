@@ -7,6 +7,10 @@ import 'package:solar_icons/solar_icons.dart';
 import 'package:bloomie/features/adventure/cubit/adventure_cubit.dart';
 import 'package:bloomie/features/adventure/cubit/adventure_state.dart';
 import 'package:bloomie/core/database/app_database.dart';
+import '../widgets/adventure_event_sheet.dart';
+import '../widgets/adventure_challenge_sheet.dart';
+import '../widgets/collectible_found_dialog.dart';
+import '../widgets/lore_unlocked_sheet.dart';
 
 class AdventureScreen extends StatefulWidget {
   const AdventureScreen({super.key});
@@ -16,6 +20,11 @@ class AdventureScreen extends StatefulWidget {
 }
 
 class _AdventureScreenState extends State<AdventureScreen> {
+  // Cache the last known loaded state so the land map stays visible
+  // behind overlay states (EventTriggered, ChallengeActive, etc.)
+  // instead of going blank.
+  AdventureLoaded? _lastLoaded;
+
   @override
   void initState() {
     super.initState();
@@ -29,10 +38,7 @@ class _AdventureScreenState extends State<AdventureScreen> {
       appBar: AppBar(
         title: Text(
           'Adventure Lands',
-          style: GoogleFonts.baloo2(
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
+          style: GoogleFonts.baloo2(fontWeight: FontWeight.w800, color: Colors.white),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -41,31 +47,97 @@ class _AdventureScreenState extends State<AdventureScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: BlocBuilder<AdventureCubit, AdventureState>(
+      body: BlocConsumer<AdventureCubit, AdventureState>(
+        listener: (context, state) {
+          if (state is AdventureEventTriggered) {
+            _showEventSheet(context, state.event, state.currentLand);
+          } else if (state is AdventureChallengeActive) {
+            _showChallengeSheet(context, state.challenge, state.currentLand);
+          } else if (state is AdventureCollectibleFound) {
+            _showCollectibleFound(context, state.collectible, state.xpEarned);
+          } else if (state is AdventureLoreUnlocked) {
+            _showLoreUnlocked(context, state.lore, state.landId);
+          }
+        },
         builder: (context, state) {
-          if (state is AdventureLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryPink),
-            );
+          if (state is AdventureLoaded) {
+            _lastLoaded = state; // cache whenever we have fresh data
+            return _LandMap(lands: state.lands, currentLevel: state.currentLevel);
+          }
+
+          if (state is AdventureLoading && _lastLoaded == null) {
+            return const Center(child: CircularProgressIndicator(color: AppColors.primaryPink));
           }
 
           if (state is AdventureError) {
             return Center(
-              child: Text(
-                'Error: ${state.message}',
-                style: const TextStyle(color: Colors.white),
-              ),
+              child: Text('Error: ${state.message}', style: const TextStyle(color: Colors.white)),
             );
           }
 
-          if (state is AdventureLoaded) {
-            return _LandMap(
-              lands: state.lands,
-              currentLevel: state.currentLevel,
-            );
+          // For all overlay states (EventTriggered, ChallengeActive,
+          // CollectibleFound, LoreUnlocked) and Loading while we have cached
+          // data — keep showing the land map in the background.
+          if (_lastLoaded != null) {
+            return _LandMap(lands: _lastLoaded!.lands, currentLevel: _lastLoaded!.currentLevel);
           }
 
           return const SizedBox();
+        },
+      ),
+    );
+  }
+
+  void _showEventSheet(BuildContext context, dynamic event, dynamic land) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => BlocProvider.value(
+        value: context.read<AdventureCubit>(),
+        child: AdventureEventSheet(event: event, currentLand: land),
+      ),
+    );
+  }
+
+  void _showChallengeSheet(BuildContext context, dynamic challenge, dynamic land) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => BlocProvider.value(
+        value: context.read<AdventureCubit>(),
+        child: AdventureChallengeSheet(challenge: challenge, currentLand: land),
+      ),
+    );
+  }
+
+  void _showCollectibleFound(BuildContext context, dynamic collectible, int xp) {
+    final cubit = context.read<AdventureCubit>();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => CollectibleFoundDialog(
+        collectible: collectible,
+        xpEarned: xp,
+        onContinue: () {
+          cubit.loadLands();
+        },
+      ),
+    );
+  }
+
+  void _showLoreUnlocked(BuildContext context, dynamic lore, String landId) {
+    final cubit = context.read<AdventureCubit>();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => LoreUnlockedSheet(
+        lore: lore,
+        landId: landId,
+        onContinue: () {
+          cubit.loadLands();
         },
       ),
     );
@@ -105,11 +177,7 @@ class _LandMap extends StatelessWidget {
                     children: [
                       Text(
                         'Your Journey',
-                        style: GoogleFonts.baloo2(
-                          fontSize: 22.sp,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
+                        style: GoogleFonts.baloo2(fontSize: 22.sp, fontWeight: FontWeight.w800, color: Colors.white),
                       ),
                       SizedBox(height: 4.h),
                       Text(
@@ -123,10 +191,7 @@ class _LandMap extends StatelessWidget {
                       SizedBox(height: 8.h),
                       Text(
                         '${lands.where((l) => l.unlocked).length} of ${lands.length} lands unlocked',
-                        style: GoogleFonts.nunito(
-                          fontSize: 12.sp,
-                          color: Colors.white.withValues(alpha: 0.7),
-                        ),
+                        style: GoogleFonts.nunito(fontSize: 12.sp, color: Colors.white.withValues(alpha: 0.7)),
                       ),
                     ],
                   ),
@@ -141,24 +206,17 @@ class _LandMap extends StatelessWidget {
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: 20.w),
           sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final land = lands[index];
-                final isLast = index == lands.length - 1;
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final land = lands[index];
+              final isLast = index == lands.length - 1;
 
-                return Column(
-                  children: [
-                    _LandCard(
-                      land: land,
-                      currentLevel: currentLevel,
-                    ),
-                    if (!isLast)
-                      _PathConnector(unlocked: land.unlocked),
-                  ],
-                );
-              },
-              childCount: lands.length,
-            ),
+              return Column(
+                children: [
+                  _LandCard(land: land, currentLevel: currentLevel),
+                  if (!isLast) _PathConnector(unlocked: land.unlocked),
+                ],
+              );
+            }, childCount: lands.length),
           ),
         ),
 
@@ -183,9 +241,7 @@ class _PathConnector extends StatelessWidget {
           width: 3.w,
           height: 32.h,
           decoration: BoxDecoration(
-            color: unlocked
-                ? AppColors.primaryPink.withValues(alpha: 0.6)
-                : Colors.white.withValues(alpha: 0.15),
+            color: unlocked ? AppColors.primaryPink.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -212,9 +268,7 @@ class _LandCard extends StatelessWidget {
         : Colors.white.withValues(alpha: 0.08);
 
     return GestureDetector(
-      onTap: isUnlocked
-          ? () => _showLandDetail(context, land)
-          : null,
+      onTap: isUnlocked ? () => _showLandDetail(context, land) : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         margin: EdgeInsets.only(bottom: 0),
@@ -224,13 +278,7 @@ class _LandCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: borderColor, width: 1.5),
           boxShadow: isUnlocked
-              ? [
-                  BoxShadow(
-                    color: AppColors.primaryPink.withValues(alpha: 0.15),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  ),
-                ]
+              ? [BoxShadow(color: AppColors.primaryPink.withValues(alpha: 0.15), blurRadius: 12, spreadRadius: 1)]
               : [],
         ),
         child: Row(
@@ -240,16 +288,11 @@ class _LandCard extends StatelessWidget {
               width: 60.w,
               height: 60.h,
               decoration: BoxDecoration(
-                color: isUnlocked
-                    ? Colors.white.withValues(alpha: 0.15)
-                    : Colors.white.withValues(alpha: 0.05),
+                color: isUnlocked ? Colors.white.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: Text(
-                  isUnlocked ? land.emoji : '🔒',
-                  style: TextStyle(fontSize: 28.sp),
-                ),
+                child: Text(isUnlocked ? land.emoji : '🔒', style: TextStyle(fontSize: 28.sp)),
               ),
             ),
             SizedBox(width: 16.w),
@@ -272,9 +315,7 @@ class _LandCard extends StatelessWidget {
                     isUnlocked ? land.description : 'Reach Level ${land.requiredLevel} to unlock',
                     style: GoogleFonts.nunito(
                       fontSize: 11.sp,
-                      color: isUnlocked
-                          ? Colors.white.withValues(alpha: 0.7)
-                          : Colors.white.withValues(alpha: 0.35),
+                      color: isUnlocked ? Colors.white.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.35),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -288,18 +329,13 @@ class _LandCard extends StatelessWidget {
                         value: land.progress,
                         minHeight: 6.h,
                         backgroundColor: Colors.white.withValues(alpha: 0.15),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          _progressColor(land.progress),
-                        ),
+                        valueColor: AlwaysStoppedAnimation<Color>(_progressColor(land.progress)),
                       ),
                     ),
                     SizedBox(height: 4.h),
                     Text(
                       '${(land.progress * 100).toInt()}% explored',
-                      style: GoogleFonts.nunito(
-                        fontSize: 10.sp,
-                        color: Colors.white.withValues(alpha: 0.5),
-                      ),
+                      style: GoogleFonts.nunito(fontSize: 10.sp, color: Colors.white.withValues(alpha: 0.5)),
                     ),
                   ],
                 ],
@@ -314,32 +350,22 @@ class _LandCard extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primaryPink, AppColors.lavender],
-                      ),
+                      gradient: const LinearGradient(colors: [AppColors.primaryPink, AppColors.lavender]),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'Explore',
-                      style: GoogleFonts.nunito(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                      style: GoogleFonts.nunito(fontSize: 11.sp, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   )
                 else
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
                     decoration: BoxDecoration(
-                      color: canUnlock
-                          ? Colors.amber.withValues(alpha: 0.2)
-                          : Colors.white.withValues(alpha: 0.05),
+                      color: canUnlock ? Colors.amber.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: canUnlock
-                            ? Colors.amber.withValues(alpha: 0.5)
-                            : Colors.white.withValues(alpha: 0.1),
+                        color: canUnlock ? Colors.amber.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Text(
@@ -361,13 +387,20 @@ class _LandCard extends StatelessWidget {
 
   Color _unlockedBg(String id) {
     switch (id) {
-      case 'land_meadow':  return const Color(0xFF1A3A1A);
-      case 'land_forest':  return const Color(0xFF0D2D1A);
-      case 'land_cave':    return const Color(0xFF1A1A35);
-      case 'land_marsh':   return const Color(0xFF0D1F2D);
-      case 'land_sky':     return const Color(0xFF1A2535);
-      case 'land_cosmos':  return const Color(0xFF1A0D2D);
-      default:             return const Color(0xFF2A1F45);
+      case 'land_meadow':
+        return const Color(0xFF1A3A1A);
+      case 'land_forest':
+        return const Color(0xFF0D2D1A);
+      case 'land_cave':
+        return const Color(0xFF1A1A35);
+      case 'land_marsh':
+        return const Color(0xFF0D1F2D);
+      case 'land_sky':
+        return const Color(0xFF1A2535);
+      case 'land_cosmos':
+        return const Color(0xFF1A0D2D);
+      default:
+        return const Color(0xFF2A1F45);
     }
   }
 
@@ -411,10 +444,7 @@ class _LandDetailSheet extends StatelessWidget {
           Container(
             width: 40.w,
             height: 4.h,
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(2),
-            ),
+            decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
           ),
           SizedBox(height: 24.h),
 
@@ -424,19 +454,12 @@ class _LandDetailSheet extends StatelessWidget {
 
           Text(
             land.name,
-            style: GoogleFonts.baloo2(
-              fontSize: 24.sp,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
+            style: GoogleFonts.baloo2(fontSize: 24.sp, fontWeight: FontWeight.w800, color: Colors.white),
           ),
           SizedBox(height: 8.h),
           Text(
             land.description,
-            style: GoogleFonts.nunito(
-              fontSize: 14.sp,
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
+            style: GoogleFonts.nunito(fontSize: 14.sp, color: Colors.white.withValues(alpha: 0.7)),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 24.h),
@@ -470,62 +493,88 @@ class _LandDetailSheet extends StatelessWidget {
           ),
           SizedBox(height: 24.h),
 
-          // Explore button
-          if (land.progress < 1.0)
-            SizedBox(
-              width: double.infinity,
-              height: 52.h,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                ),
-                onPressed: () async {
-                  await context.read<AdventureCubit>().exploreLand(land);
-                  if (context.mounted) Navigator.pop(context);
-                },
-                child: Ink(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primaryPink, AppColors.lavender],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Container(
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('⚔️', style: TextStyle(fontSize: 18.sp)),
-                        SizedBox(width: 10.w),
-                        Text(
-                          'Explore +10%',
-                          style: GoogleFonts.baloo2(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
-                        Text(
-                          '+30 XP',
-                          style: GoogleFonts.nunito(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+          // Exploration Options (if not mastered)
+          if (land.progress < 1.0) ...[
+            Text(
+              'Choose Your Adventure',
+              style: GoogleFonts.baloo2(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.8),
               ),
-            )
-          else
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 16.h),
+
+            // Quick Explore
+            _ExploreButton(
+              label: 'Quick Explore',
+              description: '+10% progress, +30 XP',
+              emoji: '⚔️',
+              gradient: const [AppColors.primaryPink, AppColors.lavender],
+              onPressed: () async {
+                final cubit = context.read<AdventureCubit>();
+                await cubit.exploreLand(land);
+                if (context.mounted) Navigator.pop(context);
+              },
+            ),
+            SizedBox(height: 12.h),
+
+            // Trigger Event
+            _ExploreButton(
+              label: 'Seek Events',
+              description: 'Random encounters & choices',
+              emoji: '🎭',
+              gradient: [Colors.amber, Colors.orange],
+              onPressed: () async {
+                final cubit = context.read<AdventureCubit>();
+                Navigator.pop(context);
+                await cubit.triggerEvent(land);
+              },
+            ),
+            SizedBox(height: 12.h),
+
+            // Challenge
+            _ExploreButton(
+              label: 'Take Challenge',
+              description: 'Quiz & riddles for bonus XP',
+              emoji: '🧠',
+              gradient: [Colors.purple, Colors.deepPurple],
+              onPressed: () async {
+                final cubit = context.read<AdventureCubit>();
+                Navigator.pop(context);
+                await cubit.startChallenge(land);
+              },
+            ),
+            SizedBox(height: 12.h),
+
+            // Treasure Hunt
+            _ExploreButton(
+              label: 'Hunt Treasure',
+              description: 'Find rare collectibles',
+              emoji: '💎',
+              gradient: [Colors.cyan, Colors.blue],
+              onPressed: () async {
+                final cubit = context.read<AdventureCubit>();
+                Navigator.pop(context);
+                await cubit.huntTreasure(land);
+              },
+            ),
+            SizedBox(height: 12.h),
+
+            // Discover Lore
+            _ExploreButton(
+              label: 'Discover Lore',
+              description: 'Unlock hidden stories',
+              emoji: '📜',
+              gradient: [Colors.teal, Colors.green],
+              onPressed: () async {
+                final cubit = context.read<AdventureCubit>();
+                Navigator.pop(context);
+                await cubit.discoverLore(land);
+              },
+            ),
+          ] else
             Container(
               width: double.infinity,
               padding: EdgeInsets.all(16.w),
@@ -536,11 +585,7 @@ class _LandDetailSheet extends StatelessWidget {
               ),
               child: Text(
                 '🏆 Land Fully Mastered!',
-                style: GoogleFonts.baloo2(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.greenAccent,
-                ),
+                style: GoogleFonts.baloo2(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.greenAccent),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -574,20 +619,80 @@ class _InfoChip extends StatelessWidget {
           SizedBox(height: 4.h),
           Text(
             value,
-            style: GoogleFonts.baloo2(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: GoogleFonts.baloo2(fontSize: 14.sp, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           Text(
             label,
-            style: GoogleFonts.nunito(
-              fontSize: 10.sp,
-              color: Colors.white38,
-            ),
+            style: GoogleFonts.nunito(fontSize: 10.sp, color: Colors.white38),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Exploration Button Widget ────────────────────
+
+class _ExploreButton extends StatelessWidget {
+  final String label;
+  final String description;
+  final String emoji;
+  final List<Color> gradient;
+  final VoidCallback onPressed;
+
+  const _ExploreButton({
+    required this.label,
+    required this.description,
+    required this.emoji,
+    required this.gradient,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56.h,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+        ),
+        onPressed: onPressed,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: gradient),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            child: Row(
+              children: [
+                Text(emoji, style: TextStyle(fontSize: 22.sp)),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: GoogleFonts.baloo2(fontSize: 15.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      Text(
+                        description,
+                        style: GoogleFonts.nunito(fontSize: 11.sp, color: Colors.white.withValues(alpha: 0.8)),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(SolarIconsOutline.altArrowRight, color: Colors.white, size: 20.sp),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -3,10 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../auth/models/user_model.dart';
 import '../../auth/services/auth_service.dart';
 import 'profile_state.dart';
+import '../../shop/models/accessory_effects.dart';
 
 class ProfileCubit extends Cubit<ProfileState> {
   static const String _userKey = 'user_profile';
   final AuthService _authService;
+  List<String> _equippedAccessories = [];
 
   /// Serializes XP/Blooms read-modify-write operations. Without this,
   /// two near-simultaneous calls (e.g. completing a habit and a task at
@@ -63,7 +65,9 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> refreshFromCloud() async {
     if (!_authService.isSignedIn) return;
     try {
-      final user = await _authService.fetchProfile(_authService.currentUser!.id);
+      final user = await _authService.fetchProfile(
+        _authService.currentUser!.id,
+      );
       await loadFromSupabase(user);
     } catch (_) {
       // Offline or network error — keep showing the cached profile.
@@ -108,39 +112,82 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   // ── XP ─────────────────────────────────────
 
-  Future<void> addXP(int amount) => _synchronized(() async {
-        if (state is! ProfileLoaded) return;
-        final user = (state as ProfileLoaded).user;
-        final newXP = user.xp + amount;
-        final newLevel = (newXP ~/ 500) + 1;
+  Future<void> addXP(int amount, {bool isFocusTask = false}) => _synchronized(() async {
+    if (state is! ProfileLoaded) return;
+    final user = (state as ProfileLoaded).user;
 
-        final updated = user.copyWith(xp: newXP, level: newLevel);
-        await saveProfile(updated);
-        emit(ProfileLoaded(updated));
-      });
+    // Apply accessory XP multiplier
+    final xpMultiplier = AccessoryEffects.calculateXPMultiplier(
+      _equippedAccessories,
+      isFocusTask: isFocusTask,
+      isDuoActive: user.duoPartnerId != null && user.duoPartnerId!.isNotEmpty,
+    );
+    final boostedAmount = (amount * xpMultiplier).toInt();
+
+    final newXP = user.xp + boostedAmount;
+    final newLevel = (newXP ~/ 500) + 1;
+
+    final updated = user.copyWith(xp: newXP, level: newLevel);
+    await saveProfile(updated);
+    emit(ProfileLoaded(updated));
+  });
 
   // ── Blooms ─────────────────────────────────
 
   Future<void> addBlooms(int amount) => _synchronized(() async {
-        if (state is! ProfileLoaded) return;
-        final user = (state as ProfileLoaded).user;
-        final updated = user.copyWith(totalBlooms: user.totalBlooms + amount);
-        await saveProfile(updated);
-        emit(ProfileLoaded(updated));
-      });
+    if (state is! ProfileLoaded) return;
+    final user = (state as ProfileLoaded).user;
+
+    // Apply accessory Bloom multiplier
+    final bloomMultiplier = AccessoryEffects.calculateBloomMultiplier(
+      _equippedAccessories,
+      isDuoActive: user.duoPartnerId != null && user.duoPartnerId!.isNotEmpty,
+    );
+    final boostedAmount = (amount * bloomMultiplier).toInt();
+
+    final updated = user.copyWith(
+      totalBlooms: user.totalBlooms + boostedAmount,
+    );
+    await saveProfile(updated);
+    emit(ProfileLoaded(updated));
+  });
+
+  // ── Equipped Accessories Management ─────────────
+
+  void updateEquippedAccessories(List<String> accessoryIds) {
+    _equippedAccessories = accessoryIds;
+  }
+
+  List<String> getEquippedAccessories() => _equippedAccessories;
+
+  bool hasStreakProtection() {
+    return AccessoryEffects.hasStreakProtection(_equippedAccessories);
+  }
+
+  bool hasMoodBoost() {
+    return AccessoryEffects.hasMoodBoost(_equippedAccessories);
+  }
 
   Future<bool> deductBlooms(int amount) => _synchronized(() async {
-        if (state is! ProfileLoaded) return false;
-        final user = (state as ProfileLoaded).user;
-        if (user.totalBlooms < amount) return false;
+    if (state is! ProfileLoaded) return false;
+    final user = (state as ProfileLoaded).user;
+    if (user.totalBlooms < amount) return false;
 
-        final updated = user.copyWith(totalBlooms: user.totalBlooms - amount);
-        await saveProfile(updated);
-        emit(ProfileLoaded(updated));
-        return true;
-      });
+    final updated = user.copyWith(totalBlooms: user.totalBlooms - amount);
+    await saveProfile(updated);
+    emit(ProfileLoaded(updated));
+    return true;
+  });
 
   // ── Helpers ────────────────────────────────
+
+  /// Returns the currently loaded user, or null if the profile hasn't been
+  /// loaded yet. Useful for offline fallback in AuthCubit.
+  UserModel? get cachedUser {
+    final s = state;
+    if (s is ProfileLoaded) return s.user;
+    return null;
+  }
 
   String getLevelTitle(int level) {
     if (level <= 5) return 'Seedling';

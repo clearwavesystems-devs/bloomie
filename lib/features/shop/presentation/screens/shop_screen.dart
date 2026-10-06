@@ -8,6 +8,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:solar_icons/solar_icons.dart';
+import '../widgets/shop_item_preview_dialog.dart';
+import '../../models/accessory_effects.dart';
+import '../../../../core/database/app_database.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -28,6 +31,66 @@ class _ShopScreenState extends State<ShopScreen> {
   void initState() {
     super.initState();
     context.read<ShopCubit>().loadShop();
+  }
+
+  void _showItemPreview(BuildContext context, ShopItem item) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return ShopItemPreviewDialog(
+          itemId: item.id,
+          name: item.name,
+          emoji: item.emoji,
+          price: item.price,
+          category: item.category,
+          description: _getItemDescription(item),
+          owned: item.owned,
+          equipped: item.equipped,
+          onBuy: () async {
+            final bought = await context.read<ShopCubit>().buyItem(item);
+            if (!context.mounted) return;
+            if (bought) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '🛍️ Purchased ${item.name} successfully!',
+                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+                  ),
+                  backgroundColor: AppColors.primaryPink,
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '❌ Not enough Blooms!',
+                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+                  ),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            }
+          },
+          onEquip: () {
+            context.read<ShopCubit>().toggleEquip(item);
+          },
+        );
+      },
+    );
+  }
+
+  String _getItemDescription(ShopItem item) {
+    final effects = AccessoryEffects.getEffects(item.id);
+    if (effects.isNotEmpty) {
+      return effects.map((e) => e.description).join('\n');
+    }
+    if (item.category == 'plant_skin') {
+      return 'A beautiful cosmetic skin to customize the look of your garden plants.';
+    }
+    if (item.category == 'adventure_key') {
+      return 'Unlock the corresponding adventure land instantly and start exploring new rewards!';
+    }
+    return 'A special item from the Bloom Boutique.';
   }
 
   @override
@@ -164,98 +227,76 @@ class _ShopScreenState extends State<ShopScreen> {
                             final item = filteredItems[index];
                             final pastelBg = _pastelColorFor(item.category);
 
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.02),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // Top Colored Section with Emoji
-                                  Expanded(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: pastelBg,
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                                      ),
-                                      child: Center(
-                                        child: Text(item.emoji, style: TextStyle(fontSize: 48.sp)),
+                            return GestureDetector(
+                              onTap: () => _showItemPreview(context, item),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.02),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Top Colored Section with Emoji
+                                    Expanded(
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: pastelBg,
+                                          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                        ),
+                                        child: Center(
+                                          child: Text(item.emoji, style: TextStyle(fontSize: 48.sp)),
+                                        ),
                                       ),
                                     ),
-                                  ),
 
-                                  // Text Detail Section
-                                  Padding(
-                                    padding: EdgeInsets.all(12.w),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          item.name,
-                                          style: GoogleFonts.baloo2(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14.sp,
-                                            color: AppColors.textDark,
+                                    // Text Detail Section
+                                    Padding(
+                                      padding: EdgeInsets.all(12.w),
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            item.name,
+                                            style: GoogleFonts.baloo2(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14.sp,
+                                              color: AppColors.textDark,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          textAlign: TextAlign.center,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        SizedBox(height: 2.h),
-                                        Text(
-                                          _categoryLabel(item.category),
-                                          style: GoogleFonts.nunito(
-                                            fontSize: 10.sp,
-                                            color: AppColors.textMuted,
-                                            fontWeight: FontWeight.w600,
+                                          SizedBox(height: 2.h),
+                                          Text(
+                                            _categoryLabel(item.category),
+                                            style: GoogleFonts.nunito(
+                                              fontSize: 10.sp,
+                                              color: AppColors.textMuted,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 10.h),
+                                          SizedBox(height: 10.h),
 
-                                        // Purchase / Equip Status Button
-                                        _ActionButton(
-                                          item: item,
-                                          onBuy: () async {
-                                            final bought = await context.read<ShopCubit>().buyItem(item);
-                                            if (bought) {
-                                              if (!context.mounted) return;
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    '🛍️ Purchased ${item.name} successfully!',
-                                                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
-                                                  ),
-                                                  backgroundColor: AppColors.primaryPink,
-                                                ),
-                                              );
-                                            } else {
-                                              if (!context.mounted) return;
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    '❌ Not enough Blooms!',
-                                                    style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
-                                                  ),
-                                                  backgroundColor: Colors.redAccent,
-                                                ),
-                                              );
-                                            }
-                                          },
-                                          onToggleEquip: () {
-                                            context.read<ShopCubit>().toggleEquip(item);
-                                          },
-                                        ),
-                                      ],
+                                          // Purchase / Equip Status Button
+                                          _ActionButton(
+                                            item: item,
+                                            onBuy: () => _showItemPreview(context, item),
+                                            onToggleEquip: () {
+                                              context.read<ShopCubit>().toggleEquip(item);
+                                            },
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             );
                           },

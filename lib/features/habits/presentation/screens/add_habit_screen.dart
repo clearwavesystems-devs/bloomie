@@ -1,4 +1,5 @@
 import 'package:bloomie/core/database/app_database.dart';
+import 'package:bloomie/features/auth/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
@@ -54,6 +55,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       return;
     }
 
+    final userId = AuthService().currentUser?.id ?? 'me';
+
     if (_isEditing) {
       final updated = widget.existingHabit!.copyWith(
         name: name,
@@ -66,6 +69,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     } else {
       final habit = Habit(
         id: const Uuid().v4(),
+        userId: userId,
         name: name,
         emoji: _selectedEmoji,
         category: _selectedCategoryIndex,
@@ -181,8 +185,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 onPressed: _save,
-                child: Text(_isEditing ? 'Save Changes' : 'Save Habit',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(_isEditing ? 'Save Habit' : 'Create Habit', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ],

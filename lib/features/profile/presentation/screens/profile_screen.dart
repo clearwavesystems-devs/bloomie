@@ -35,13 +35,25 @@ class ProfileScreen extends StatelessWidget {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: AppColors.pinkLight,
-                    child: Text(user.avatarEmoji, style: const TextStyle(fontSize: 50)),
+                    child: Text(
+                      user.avatarEmoji,
+                      style: const TextStyle(fontSize: 50),
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  Text(user.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(
+                    user.name,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Text(
                     context.read<ProfileCubit>().getLevelTitle(user.level),
-                    style: const TextStyle(color: AppColors.primaryPink, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: AppColors.primaryPink,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 30),
                   _StatGrid(user: user),
@@ -88,19 +100,32 @@ class _StatGrid extends StatelessWidget {
 
 class _StatCard extends StatelessWidget {
   final String label, value, icon;
-  const _StatCard({required this.label, required this.value, required this.icon});
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('$icon $label', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(
+            '$icon $label',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -126,7 +151,10 @@ class _SettingsSectionState extends State<_SettingsSection> {
   Future<void> _loadNotificationPref() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
-      setState(() => _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true);
+      setState(
+        () => _notificationsEnabled =
+            prefs.getBool('notifications_enabled') ?? true,
+      );
     }
   }
 
@@ -145,7 +173,11 @@ class _SettingsSectionState extends State<_SettingsSection> {
     final launched = await launchUrl(uri);
     if (!launched && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open email app. Reach us at support@bloomie.app')),
+        const SnackBar(
+          content: Text(
+            'Could not open email app. Reach us at support@bloomie.app',
+          ),
+        ),
       );
     }
   }
@@ -154,10 +186,15 @@ class _SettingsSectionState extends State<_SettingsSection> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24.r),
+        ),
         title: Text(
           'Sign Out? 🌸',
-          style: GoogleFonts.baloo2(fontWeight: FontWeight.bold, color: AppColors.textDark),
+          style: GoogleFonts.baloo2(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+          ),
         ),
         content: Text(
           'Are you sure you want to sign out of Bloomie?',
@@ -168,14 +205,19 @@ class _SettingsSectionState extends State<_SettingsSection> {
             onPressed: () => Navigator.pop(dialogCtx),
             child: Text(
               'Cancel',
-              style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: AppColors.textMuted),
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textMuted,
+              ),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryPink,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
             ),
             onPressed: () {
               Navigator.pop(dialogCtx);
@@ -183,7 +225,10 @@ class _SettingsSectionState extends State<_SettingsSection> {
             },
             child: Text(
               'Sign Out',
-              style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: Colors.white),
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
@@ -195,10 +240,15 @@ class _SettingsSectionState extends State<_SettingsSection> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24.r),
+        ),
         title: Text(
           'Delete Account? ⚠️',
-          style: GoogleFonts.baloo2(fontWeight: FontWeight.bold, color: Colors.redAccent),
+          style: GoogleFonts.baloo2(
+            fontWeight: FontWeight.bold,
+            color: Colors.redAccent,
+          ),
         ),
         content: Text(
           'This action is permanent and cannot be undone. All of your habits, streaks, level, and companion customisations will be permanently deleted.',
@@ -209,14 +259,19 @@ class _SettingsSectionState extends State<_SettingsSection> {
             onPressed: () => Navigator.pop(dialogCtx),
             child: Text(
               'Cancel',
-              style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: AppColors.textMuted),
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textMuted,
+              ),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
             ),
             onPressed: () {
               Navigator.pop(dialogCtx);
@@ -224,7 +279,10 @@ class _SettingsSectionState extends State<_SettingsSection> {
             },
             child: Text(
               'Delete Permanently',
-              style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: Colors.white),
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
@@ -233,12 +291,15 @@ class _SettingsSectionState extends State<_SettingsSection> {
   }
 
   void _showAccountSettingsSheet(BuildContext context) {
-    final email = Supabase.instance.client.auth.currentUser?.email ?? 'Not available';
+    final email =
+        Supabase.instance.client.auth.currentUser?.email ?? 'Not available';
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30.r))),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30.r)),
+      ),
       builder: (sheetCtx) => SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 16.h),
@@ -251,10 +312,17 @@ class _SettingsSectionState extends State<_SettingsSection> {
                 children: [
                   Text(
                     'Account Settings ⚙️',
-                    style: GoogleFonts.baloo2(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                    style: GoogleFonts.baloo2(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textDark,
+                    ),
                   ),
                   IconButton(
-                    icon: const Icon(SolarIconsOutline.closeCircle, color: AppColors.textMuted),
+                    icon: const Icon(
+                      SolarIconsOutline.closeCircle,
+                      color: AppColors.textMuted,
+                    ),
                     onPressed: () => Navigator.pop(sheetCtx),
                   ),
                 ],
@@ -307,7 +375,11 @@ class _SettingsSectionState extends State<_SettingsSection> {
                   children: [
                     Row(
                       children: [
-                        const Icon(SolarIconsOutline.danger, color: Colors.redAccent, size: 20),
+                        const Icon(
+                          SolarIconsOutline.danger,
+                          color: Colors.redAccent,
+                          size: 20,
+                        ),
                         SizedBox(width: 8.w),
                         Text(
                           'Danger Zone ⚠️',
@@ -322,7 +394,11 @@ class _SettingsSectionState extends State<_SettingsSection> {
                     SizedBox(height: 8.h),
                     Text(
                       'Permanently delete your companion, gardens, coins, Streaks, XP, and all history. This operation is absolute and cannot be undone.',
-                      style: GoogleFonts.nunito(fontSize: 12.sp, color: AppColors.textMuted, height: 1.4),
+                      style: GoogleFonts.nunito(
+                        fontSize: 12.sp,
+                        color: AppColors.textMuted,
+                        height: 1.4,
+                      ),
                     ),
                     SizedBox(height: 16.h),
                     SizedBox(
@@ -333,16 +409,24 @@ class _SettingsSectionState extends State<_SettingsSection> {
                           backgroundColor: Colors.redAccent,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
                         ),
                         onPressed: () {
                           Navigator.pop(sheetCtx);
                           _showDeleteAccountDialog(context);
                         },
-                        icon: const Icon(SolarIconsOutline.trashBinMinimalistic, size: 18),
+                        icon: const Icon(
+                          SolarIconsOutline.trashBinMinimalistic,
+                          size: 18,
+                        ),
                         label: Text(
                           'Delete My Account Permanently',
-                          style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 13.sp),
+                          style: GoogleFonts.nunito(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.sp,
+                          ),
                         ),
                       ),
                     ),
@@ -362,15 +446,29 @@ class _SettingsSectionState extends State<_SettingsSection> {
     return Column(
       children: [
         ListTile(
-          leading: const Icon(SolarIconsOutline.shop, color: AppColors.primaryPink),
-          title: const Text('Bloom Boutique', style: TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: const Text('Spend earned Blooms on cute accessories & skins'),
+          leading: const Icon(
+            SolarIconsOutline.shop,
+            color: AppColors.primaryPink,
+          ),
+          title: const Text(
+            'Bloom Boutique',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: const Text(
+            'Spend earned Blooms on cute accessories & skins',
+          ),
           trailing: const Icon(SolarIconsOutline.altArrowRight),
           onTap: () => context.push('/shop'),
         ),
         ListTile(
-          leading: const Icon(SolarIconsOutline.compass, color: Color(0xFF9C27B0)),
-          title: const Text('Adventure Lands', style: TextStyle(fontWeight: FontWeight.bold)),
+          leading: const Icon(
+            SolarIconsOutline.compass,
+            color: Color(0xFF9C27B0),
+          ),
+          title: const Text(
+            'Adventure Lands',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           subtitle: const Text('Explore worlds & earn XP rewards'),
           trailing: const Icon(SolarIconsOutline.altArrowRight),
           onTap: () => context.push('/adventure'),
@@ -378,7 +476,10 @@ class _SettingsSectionState extends State<_SettingsSection> {
         ListTile(
           leading: const Icon(SolarIconsOutline.bell),
           title: const Text('Notifications'),
-          trailing: Switch(value: _notificationsEnabled, onChanged: _toggleNotifications),
+          trailing: Switch(
+            value: _notificationsEnabled,
+            onChanged: _toggleNotifications,
+          ),
         ),
         ListTile(
           leading: const Icon(SolarIconsOutline.palette),
@@ -401,10 +502,16 @@ class _SettingsSectionState extends State<_SettingsSection> {
         ),
         const Divider(height: 32, thickness: 1),
         ListTile(
-          leading: const Icon(SolarIconsOutline.logout, color: AppColors.primaryPink),
+          leading: const Icon(
+            SolarIconsOutline.logout,
+            color: AppColors.primaryPink,
+          ),
           title: const Text(
             'Sign Out',
-            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryPink),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryPink,
+            ),
           ),
           onTap: () => _showSignOutDialog(context),
         ),
@@ -423,13 +530,22 @@ class _JournalSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(color: AppColors.pinkLight, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+              color: AppColors.pinkLight,
+              shape: BoxShape.circle,
+            ),
             child: const Text('📔', style: TextStyle(fontSize: 24)),
           ),
           const SizedBox(width: 14),
@@ -439,7 +555,11 @@ class _JournalSection extends StatelessWidget {
               children: [
                 const Text(
                   'Daily Mood Journal',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textDark,
+                  ),
                 ),
                 Text(
                   'Log your daily thoughts to earn +100 XP',
@@ -449,7 +569,11 @@ class _JournalSection extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(SolarIconsOutline.altArrowRight, size: 16, color: AppColors.primaryPink),
+            icon: const Icon(
+              SolarIconsOutline.altArrowRight,
+              size: 16,
+              color: AppColors.primaryPink,
+            ),
             onPressed: () => context.push('/journal'),
           ),
         ],
@@ -470,7 +594,9 @@ class _PetCompanionPanel extends StatelessWidget {
         String accessoryEmoji = '🐰';
 
         if (shopState is ShopLoaded) {
-          final equipped = shopState.items.where((i) => i.category == 'pet_accessory' && i.equipped);
+          final equipped = shopState.items.where(
+            (i) => i.category == 'pet_accessory' && i.equipped,
+          );
           if (equipped.isNotEmpty) {
             equippedAccessory = equipped.first.id;
             accessoryName = equipped.first.name;
@@ -484,36 +610,28 @@ class _PetCompanionPanel extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Text(
-                    '🐰 My Companion',
-                    style: GoogleFonts.baloo2(fontSize: 16.sp, fontWeight: FontWeight.w800, color: AppColors.textDark),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => context.push('/shop'),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                      decoration: BoxDecoration(color: AppColors.pinkLight, borderRadius: BorderRadius.circular(12)),
-                      child: Text(
-                        '✨ Boutique',
-                        style: GoogleFonts.nunito(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryPink,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              // Title
+              Text(
+                '🐰 My Companion',
+                style: GoogleFonts.baloo2(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                ),
               ),
               SizedBox(height: 16.h),
+
+              // Companion view
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -559,28 +677,58 @@ class _PetCompanionPanel extends StatelessWidget {
                           ],
                         ),
                         SizedBox(height: 8.h),
-                        Row(
-                          children: [
-                            Text(
-                              '👗 Wearing: ',
-                              style: GoogleFonts.nunito(fontSize: 12.sp, color: AppColors.textMuted),
-                            ),
-                            Text(
-                              '$accessoryEmoji $accessoryName',
-                              style: GoogleFonts.nunito(
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textDark,
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '👗 Wearing: ',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 12.sp,
+                                  color: AppColors.textMuted,
+                                ),
                               ),
-                            ),
-                          ],
+                              TextSpan(
+                                text: '$accessoryEmoji $accessoryName',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         SizedBox(height: 6.h),
                         Text(
                           'Complete habits to boost Blossom\'s mood!',
-                          style: GoogleFonts.nunito(fontSize: 10.sp, color: AppColors.textMuted),
+                          style: GoogleFonts.nunito(
+                            fontSize: 10.sp,
+                            color: AppColors.textMuted,
+                          ),
                         ),
                       ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20.h),
+
+              // Action Buttons Row
+              Row(
+                children: [
+                  Expanded(
+                    child: _CompanionButton(
+                      label: 'Boutique',
+                      emoji: '✨',
+                      onTap: () => context.push('/shop'),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: _CompanionButton(
+                      label: 'Wardrobe',
+                      emoji: '👗',
+                      onTap: () => context.push('/wardrobe'),
                     ),
                   ),
                 ],
@@ -589,6 +737,51 @@ class _PetCompanionPanel extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _CompanionButton extends StatelessWidget {
+  final String label;
+  final String emoji;
+  final VoidCallback onTap;
+
+  const _CompanionButton({
+    required this.label,
+    required this.emoji,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16.r),
+      child: Ink(
+        padding: EdgeInsets.symmetric(vertical: 10.h),
+        decoration: BoxDecoration(
+          color: AppColors.pinkLight,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: AppColors.primaryPink.withValues(alpha: 0.1),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: TextStyle(fontSize: 13.sp)),
+            SizedBox(width: 6.w),
+            Text(
+              label,
+              style: GoogleFonts.nunito(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryPink,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -12,6 +12,7 @@ part 'app_database.g.dart';
 
 class Habits extends Table {
   TextColumn get id => text()();
+  TextColumn get userId => text().withDefault(const Constant('me'))(); // Current user ID
   TextColumn get name => text()();
   TextColumn get emoji => text()();
   IntColumn get category => integer()(); // Enum index
@@ -79,6 +80,7 @@ class Plants extends Table {
 
 class Tasks extends Table {
   TextColumn get id => text()();
+  TextColumn get userId => text().withDefault(const Constant('me'))(); // Current user ID
   TextColumn get title => text()();
   TextColumn get description => text().nullable()();
   IntColumn get xpReward => integer().withDefault(const Constant(20))();
@@ -151,7 +153,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -179,16 +181,49 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('DROP TABLE IF EXISTS plants');
         await m.createTable(plants);
       }
+      if (from < 4) {
+        // Add user_id column to habits table for user data isolation
+        try {
+          await m.addColumn(habits, habits.userId);
+        } catch (e) {
+          if (!e.toString().contains('duplicate column name')) {
+            rethrow;
+          }
+        }
+        // Migrate existing habits to have 'me' as user_id
+        await customStatement("UPDATE habits SET user_id = 'me' WHERE user_id IS NULL");
+      }
+      if (from < 5) {
+        // Add user_id column to tasks table for user data isolation
+        try {
+          await m.addColumn(tasks, tasks.userId);
+        } catch (e) {
+          if (!e.toString().contains('duplicate column name')) {
+            rethrow;
+          }
+        }
+        // Migrate existing tasks to have 'me' as user_id
+        await customStatement("UPDATE tasks SET user_id = 'me' WHERE user_id IS NULL");
+      }
+      if (from < 6) {
+        await _seedShopItems();
+      }
     },
   );
 
   // ── Habit Queries ──────────────────────────
 
-  Future<List<Habit>> getAllHabits() =>
-      (select(habits)..where((t) => t.isArchived.equals(false))).get();
+  Future<List<Habit>> getAllHabits(String userId) =>
+      (select(habits)
+        ..where((t) => t.isArchived.equals(false))
+        ..where((t) => t.userId.equals(userId)))
+      .get();
 
-  Future<int> insertHabit(Habit habit) =>
-      into(habits).insertOnConflictUpdate(habit);
+  Future<int> insertHabit(Habit habit) {
+    // Ensure habit has userId
+    final habitWithUser = habit.copyWith(userId: habit.userId);
+    return into(habits).insert(habitWithUser);
+  }
 
   Future updateHabit(Habit habit) => update(habits).replace(habit);
 
@@ -268,20 +303,30 @@ class AppDatabase extends _$AppDatabase {
 
   // ── Task Queries ───────────────────────────
 
-  Future<List<Task>> getActiveTasks() =>
+  Future<List<Task>> getActiveTasks(String userId) =>
       (select(tasks)
             ..where((t) => t.completed.equals(false))
+            ..where((t) => t.userId.equals(userId))
             ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
           .get();
 
-  Future<List<Task>> getCompletedTasks() =>
+  Future<List<Task>> getCompletedTasks(String userId) =>
       (select(tasks)
             ..where((t) => t.completed.equals(true))
+            ..where((t) => t.userId.equals(userId))
             ..orderBy([(t) => OrderingTerm.desc(t.completedAt)]))
           .get();
 
-  Future<int> insertTask(Task task) => into(tasks).insertOnConflictUpdate(task);
-  Future updateTask(Task task) => update(tasks).replace(task);
+  Future<int> insertTask(Task task) {
+    final taskWithUser = task.copyWith(userId: task.userId);
+    return into(tasks).insert(taskWithUser);
+  }
+
+  Future updateTask(Task task) {
+    final taskWithUser = task.copyWith(userId: task.userId);
+    return update(tasks).replace(taskWithUser);
+  }
+
   Future deleteTask(String id) =>
       (delete(tasks)..where((t) => t.id.equals(id))).go();
 
@@ -488,6 +533,211 @@ class AppDatabase extends _$AppDatabase {
         emoji: '☁️',
         price: 600,
         category: 'adventure_key',
+        owned: false,
+        equipped: false,
+      ),
+      // 🎃 HALLOWEEN SPECIALS
+      ShopItem(
+        id: 'acc_pumpkin_hat',
+        name: 'Pumpkin Hat',
+        emoji: '🎃',
+        price: 150,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_ghost_ears',
+        name: 'Ghost Ears',
+        emoji: '👻',
+        price: 200,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_witch_hat',
+        name: 'Witch Hat',
+        emoji: '🧙‍♀️',
+        price: 250,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_bat_wings',
+        name: 'Bat Wings',
+        emoji: '🦇',
+        price: 350,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_spider_kitten',
+        name: 'Spider Kitten',
+        emoji: '🕷️',
+        price: 180,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      // ❄️ WINTER SPECIALS
+      ShopItem(
+        id: 'acc_santa_hat',
+        name: 'Santa Hat',
+        emoji: '🎅',
+        price: 200,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_earmuffs',
+        name: 'Earmuffs',
+        emoji: '🧣',
+        price: 120,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_snowflakes',
+        name: 'Snowflake Charm',
+        emoji: '❄️',
+        price: 180,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_reindeer_antlers',
+        name: 'Reindeer Antlers',
+        emoji: '🦌',
+        price: 300,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      // MORE GARDEN SKINS
+      ShopItem(
+        id: 'skin_pumpkin',
+        name: 'Pumpkin Patch',
+        emoji: '🎃',
+        price: 200,
+        category: 'plant_skin',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'skin_winter',
+        name: 'Frozen Garden',
+        emoji: '❄️',
+        price: 300,
+        category: 'plant_skin',
+        owned: false,
+        equipped: false,
+      ),
+      // ADDITIONAL ADVENTURE KEYS
+      ShopItem(
+        id: 'key_forest',
+        name: 'Forest Key',
+        emoji: '🌲',
+        price: 400,
+        category: 'adventure_key',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'key_marsh',
+        name: 'Marsh Key',
+        emoji: '🌙',
+        price: 700,
+        category: 'adventure_key',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'key_cosmos',
+        name: 'Cosmos Key',
+        emoji: '🌌',
+        price: 1000,
+        category: 'adventure_key',
+        owned: false,
+        equipped: false,
+      ),
+      // 🎃 NEW HALLOWEEN SPECIALS
+      ShopItem(
+        id: 'acc_candy_basket',
+        name: 'Candy Basket',
+        emoji: '🍬',
+        price: 100,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_vampire_cape',
+        name: 'Vampire Cape',
+        emoji: '🧛',
+        price: 280,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_franken_bolts',
+        name: 'Frankie Bolts',
+        emoji: '🔩',
+        price: 140,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      // ❄️ NEW WINTER SPECIALS
+      ShopItem(
+        id: 'acc_snowman_scarf',
+        name: 'Snowman Scarf',
+        emoji: '☃️',
+        price: 130,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_elf_ears',
+        name: 'Elf Hat & Ears',
+        emoji: '🧝',
+        price: 220,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'acc_ice_crown',
+        name: 'Ice Crown',
+        emoji: '❄️',
+        price: 350,
+        category: 'pet_accessory',
+        owned: false,
+        equipped: false,
+      ),
+      // NEW GARDEN SKINS
+      ShopItem(
+        id: 'skin_spooky',
+        name: 'Spooky Mansion',
+        emoji: '🪦',
+        price: 250,
+        category: 'plant_skin',
+        owned: false,
+        equipped: false,
+      ),
+      ShopItem(
+        id: 'skin_gingerbread',
+        name: 'Gingerbread House',
+        emoji: '🏠',
+        price: 280,
+        category: 'plant_skin',
         owned: false,
         equipped: false,
       ),

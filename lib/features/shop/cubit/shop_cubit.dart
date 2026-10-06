@@ -9,7 +9,9 @@ class ShopCubit extends Cubit<ShopState> {
   final ProfileCubit _profileCubit;
   final AppDatabase _db; // Used to trigger adventure land unlocks directly
 
-  ShopCubit(this._shopService, this._profileCubit, this._db) : super(ShopInitial());
+  ShopCubit(this._shopService, this._profileCubit, this._db) : super(ShopInitial()) {
+    loadShop();
+  }
 
   // ── Load ───────────────────────────────────
 
@@ -18,6 +20,13 @@ class ShopCubit extends Cubit<ShopState> {
     try {
       final items = await _shopService.getAllShopItems();
       emit(ShopLoaded(items: items));
+      
+      // Update ProfileCubit's equipped list!
+      final equippedIds = items
+          .where((i) => i.equipped)
+          .map((i) => i.id)
+          .toList();
+      _profileCubit.updateEquippedAccessories(equippedIds);
     } catch (e) {
       emit(ShopError(e.toString()));
     }
@@ -47,21 +56,29 @@ class ShopCubit extends Cubit<ShopState> {
 
       // Special Case: Adventure Keys trigger instant Land Unlocks
       if (item.category == 'adventure_key') {
-        // e.g. key: "meadow_key" -> unlocks land: "sunny_meadow"
-        // Let's find the matching adventure land by mapping names/id
+        // Map keys to land IDs
         final lands = await _db.getAllLands();
         String? targetLandId;
 
         if (item.id.contains('meadow')) {
-          targetLandId = 'sunny_meadow';
+          targetLandId = 'land_meadow';
         } else if (item.id.contains('cave')) {
-          targetLandId = 'crystal_cave';
-        } else if (item.id.contains('cloud')) {
-          targetLandId = 'cloud_kingdom';
+          targetLandId = 'land_cave';
+        } else if (item.id.contains('sky') || item.id.contains('cloud')) {
+          targetLandId = 'land_sky';
+        } else if (item.id.contains('marsh')) {
+          targetLandId = 'land_marsh';
+        } else if (item.id.contains('forest')) {
+          targetLandId = 'land_forest';
+        } else if (item.id.contains('cosmos')) {
+          targetLandId = 'land_cosmos';
         }
 
         if (targetLandId != null) {
-          final land = lands.firstWhere((l) => l.id == targetLandId);
+          final land = lands.firstWhere(
+            (l) => l.id == targetLandId,
+            orElse: () => lands.first,
+          );
           await _db.updateLand(land.copyWith(unlocked: true));
         }
       }
