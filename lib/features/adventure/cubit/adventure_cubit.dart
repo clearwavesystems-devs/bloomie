@@ -49,21 +49,30 @@ class AdventureCubit extends Cubit<AdventureState> {
     }
   }
 
+  // Guard against rapid double-tap race conditions during explore/events
+  bool _isProcessing = false;
+
   // ── Quick Explore (original simple method) ──────
 
   Future<void> exploreLand(AdventureLand land) async {
     if (state is! AdventureLoaded) return;
     if (!land.unlocked) return;
+    if (_isProcessing) return;
 
-    // Progress increases by 10% per explore action, capped at 1.0
-    final newProgress = (land.progress + 0.1).clamp(0.0, 1.0);
-    final updated = land.copyWith(progress: newProgress);
-    await _db.updateLand(updated);
+    _isProcessing = true;
+    try {
+      // Progress increases by 10% per explore action, capped at 1.0
+      final newProgress = (land.progress + 0.1).clamp(0.0, 1.0);
+      final updated = land.copyWith(progress: newProgress);
+      await _db.updateLand(updated);
 
-    // Award XP for exploring
-    await _profileCubit.addXP(30);
+      // Award XP for exploring
+      await _profileCubit.addXP(30);
 
-    await loadLands();
+      await loadLands();
+    } finally {
+      _isProcessing = false;
+    }
   }
 
   // ── Enhanced Gameplay Methods ─────────────────────────────────────

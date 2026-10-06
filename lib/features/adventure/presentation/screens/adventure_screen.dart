@@ -46,6 +46,13 @@ class _AdventureScreenState extends State<AdventureScreen> {
           icon: const Icon(SolarIconsOutline.arrowLeft, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(SolarIconsOutline.questionCircle, color: Colors.white),
+            tooltip: 'How Adventures Work',
+            onPressed: () => _showHelpDialog(context),
+          ),
+        ],
       ),
       body: BlocConsumer<AdventureCubit, AdventureState>(
         listener: (context, state) {
@@ -139,6 +146,59 @@ class _AdventureScreenState extends State<AdventureScreen> {
         onContinue: () {
           cubit.loadLands();
         },
+      ),
+    );
+  }
+
+  void _showHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF241547),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        title: Row(
+          children: [
+            const Text('🗺️', style: TextStyle(fontSize: 24)),
+            SizedBox(width: 8.w),
+            Text(
+              'How Adventures Work',
+              style: GoogleFonts.baloo2(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18.sp),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _helpItem('🌱 Leveling & Unlocking', 'Level up by completing daily habits & tasks to unlock higher lands! Or unlock early using Adventure Keys from the Bloom Boutique.'),
+              _helpItem('⚔️ Quick Explore', 'Spend energy to gain +10% land exploration progress and earn instant XP!'),
+              _helpItem('🎭 Seek Events', 'Encounter interactive fantasy stories with choices, branching paths, and bonus progress.'),
+              _helpItem('🧠 Challenges & Riddles', 'Test your knowledge with fun quizzes to earn big XP rewards.'),
+              _helpItem('💎 Collectibles & Lore', 'Discover hidden relics, magical artifacts, and secret stories as your land progress reaches 100%!'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text('Got It! ✨', style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: AppColors.primaryPink)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _helpItem(String title, String desc) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: GoogleFonts.baloo2(fontWeight: FontWeight.bold, color: Colors.amber, fontSize: 13.sp)),
+          SizedBox(height: 2.h),
+          Text(desc, style: GoogleFonts.nunito(color: Colors.white70, fontSize: 12.sp, height: 1.4)),
+        ],
       ),
     );
   }
