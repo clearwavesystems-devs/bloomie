@@ -35,7 +35,14 @@ class _HabitScreenState extends State<HabitScreen> {
     context.read<HabitsCubit>().loadHabits();
     context.read<DuoCubit>().loadDuoData();
     context.read<GardenCubit>().init();
-    context.read<ProfileCubit>().loadProfile();
+    // By the time this screen is reachable, AuthCubit has already loaded
+    // the profile (session restore / sign-in both populate it first). Only
+    // fall back to the local-cache loader if that somehow didn't happen —
+    // calling it unconditionally would flash a loading state over an
+    // already-loaded profile and could race with the auth flow's own write.
+    if (context.read<ProfileCubit>().state is! ProfileLoaded) {
+      context.read<ProfileCubit>().loadProfile();
+    }
     context.read<ShopCubit>().loadShop(); // Load equipped accessories for pet
   }
 
@@ -57,7 +64,7 @@ class _HabitScreenState extends State<HabitScreen> {
             context.read<HabitsCubit>().loadHabits();
             context.read<DuoCubit>().loadDuoData();
             context.read<GardenCubit>().init();
-            context.read<ProfileCubit>().loadProfile();
+            context.read<ProfileCubit>().refreshFromCloud();
             context.read<ShopCubit>().loadShop();
           }
         },
@@ -74,11 +81,7 @@ class _HabitScreenState extends State<HabitScreen> {
               ),
             ),
             SliverToBoxAdapter(
-              child: _SectionHeader(
-                title: "Daily Habits",
-                actionText: "see all",
-                onAction: () => context.push('/habits'),
-              ),
+              child: _SectionHeader(title: "Daily Habits"),
             ),
             _HabitList(),
             SliverToBoxAdapter(
@@ -108,10 +111,9 @@ class _HeroSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profileState = context.watch<ProfileCubit>().state;
-    int streak = 0;
+    final streak = context.watch<HabitsCubit>().overallStreak;
     int blooms = 0;
     if (profileState is ProfileLoaded) {
-      streak = profileState.user.streakDays;
       blooms = profileState.user.totalBlooms;
     }
 
@@ -475,13 +477,11 @@ class _ProgressCard extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  final String actionText;
-  final VoidCallback onAction;
+  final VoidCallback? onAction;
 
   const _SectionHeader({
     required this.title,
-    this.actionText = "See all",
-    required this.onAction,
+    this.onAction,
   });
 
   @override
@@ -499,17 +499,18 @@ class _SectionHeader extends StatelessWidget {
               color: const Color(0xFF3A2030),
             ),
           ),
-          TextButton(
-            onPressed: onAction,
-            child: Text(
-              actionText,
-              style: GoogleFonts.nunito(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFFC07AD0),
+          if (onAction != null)
+            TextButton(
+              onPressed: onAction,
+              child: Text(
+                "See all",
+                style: GoogleFonts.nunito(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFC07AD0),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -529,6 +530,8 @@ class _HabitList extends StatelessWidget {
                 habit: habit,
                 onToggle: () =>
                     context.read<HabitsCubit>().toggleHabitComplete(habit.id),
+                onArchive: () =>
+                    context.read<HabitsCubit>().archiveHabit(habit.id),
                 partnerNote: habit.isSharedWithPartner
                     ? 'Mira also did this!'
                     : null,
@@ -545,12 +548,58 @@ class _HabitList extends StatelessWidget {
 }
 
 class _WeeklyReportCard extends StatelessWidget {
+  /// Builds the last 7 days' real completion ratio (0.0–1.0) per day from
+  /// the user's actual habit logs, newest day last (today at index 6).
+  List<double> _computeMyWeeklyProgress(HabitsLoaded state) {
+    final totalHabits = state.habits.length;
+    if (totalHabits == 0) return List.filled(7, 0.0);
+
+    final today = DateTime.now();
+    return List.generate(7, (i) {
+      final day = DateTime(today.year, today.month, today.day)
+          .subtract(Duration(days: 6 - i));
+      final completedCount = state.habits.where((h) {
+        final logs = state.habitLogs[h.id] ?? [];
+        return logs.any(
+          (d) => d.year == day.year && d.month == day.month && d.day == day.day,
+        );
+      }).length;
+      return completedCount / totalHabits;
+    });
+  }
+
+  List<String> _weekdayLabels() {
+    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final today = DateTime.now();
+    return List.generate(7, (i) {
+      final day = DateTime(today.year, today.month, today.day)
+          .subtract(Duration(days: 6 - i));
+      return labels[day.weekday - 1];
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Mock data for visual excellence - in real app this would come from a Cubit
-    final List<double> myProgress = [0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.3];
-    final List<double> partnerProgress = [0.5, 0.4, 0.8, 0.6, 0.7, 0.4, 0.5];
-    final List<String> days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final habitsState = context.watch<HabitsCubit>().state;
+    final duoState = context.watch<DuoCubit>().state;
+
+    final myProgress = habitsState is HabitsLoaded
+        ? _computeMyWeeklyProgress(habitsState)
+        : List.filled(7, 0.0);
+    final days = _weekdayLabels();
+
+    // Partner data is only meaningful while a Duo session is active; the
+    // underlying report is still partner-simulated (see DuoService) until
+    // real partner syncing lands, but we avoid inventing a *third*,
+    // disconnected mock here — show it only when Duo actually has data.
+    final hasPartnerData = duoState is DuoLoaded && duoState.session != null;
+    final partnerProgress = hasPartnerData
+        ? duoState.weeklyReport['partner'] ?? List.filled(7, 0.0)
+        : null;
+
+    final avgRate = myProgress.isEmpty
+        ? 0.0
+        : myProgress.reduce((a, b) => a + b) / myProgress.length;
 
     return Container(
       padding: EdgeInsets.all(20.w),
@@ -580,7 +629,7 @@ class _WeeklyReportCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '+12% this week',
+                '${(avgRate * 100).round()}% avg this week',
                 style: GoogleFonts.nunito(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w700,
@@ -599,7 +648,8 @@ class _WeeklyReportCard extends StatelessWidget {
                 return _BarChartGroup(
                   day: days[index],
                   myProgress: myProgress[index],
-                  partnerProgress: partnerProgress[index],
+                  partnerProgress:
+                      partnerProgress != null ? partnerProgress[index] : null,
                 );
               }),
             ),
@@ -613,12 +663,12 @@ class _WeeklyReportCard extends StatelessWidget {
 class _BarChartGroup extends StatelessWidget {
   final String day;
   final double myProgress;
-  final double partnerProgress;
+  final double? partnerProgress;
 
   const _BarChartGroup({
     required this.day,
     required this.myProgress,
-    required this.partnerProgress,
+    this.partnerProgress,
   });
 
   @override
@@ -637,15 +687,17 @@ class _BarChartGroup extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
-            SizedBox(width: 4.w),
-            Container(
-              width: 8.w,
-              height: 60.h * partnerProgress,
-              decoration: BoxDecoration(
-                color: const Color(0xFFC07AD0),
-                borderRadius: BorderRadius.circular(4),
+            if (partnerProgress != null) ...[
+              SizedBox(width: 4.w),
+              Container(
+                width: 8.w,
+                height: 60.h * partnerProgress!,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFC07AD0),
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
-            ),
+            ],
           ],
         ),
         SizedBox(height: 8.h),

@@ -4,7 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/models/user_model.dart';
+import '../../../habits/cubit/habits_cubit.dart';
 import '../../../habits/presentation/widgets/bobbing_bunny.dart';
 import '../../../shop/cubit/shop_cubit.dart';
 import '../../../shop/cubit/shop_state.dart';
@@ -59,11 +63,12 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _StatGrid extends StatelessWidget {
-  final dynamic user;
+  final UserModel user;
   const _StatGrid({required this.user});
 
   @override
   Widget build(BuildContext context) {
+    final streak = context.watch<HabitsCubit>().overallStreak;
     return GridView.count(
       shrinkWrap: true,
       crossAxisCount: 2,
@@ -75,7 +80,7 @@ class _StatGrid extends StatelessWidget {
         _StatCard(label: 'Level', value: '${user.level}', icon: '⭐'),
         _StatCard(label: 'XP', value: '${user.xp}', icon: '✨'),
         _StatCard(label: 'Blooms', value: '${user.totalBlooms}', icon: '🌸'),
-        _StatCard(label: 'Streak', value: '${user.streakDays} days', icon: '🔥'),
+        _StatCard(label: 'Streak', value: '$streak days', icon: '🔥'),
       ],
     );
   }
@@ -102,8 +107,48 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _SettingsSection extends StatelessWidget {
+class _SettingsSection extends StatefulWidget {
   const _SettingsSection();
+
+  @override
+  State<_SettingsSection> createState() => _SettingsSectionState();
+}
+
+class _SettingsSectionState extends State<_SettingsSection> {
+  bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationPref();
+  }
+
+  Future<void> _loadNotificationPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() => _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true);
+    }
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    setState(() => _notificationsEnabled = value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notifications_enabled', value);
+  }
+
+  Future<void> _contactSupport(BuildContext context) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: 'support@bloomie.app',
+      query: 'subject=Bloomie Support Request',
+    );
+    final launched = await launchUrl(uri);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open email app. Reach us at support@bloomie.app')),
+      );
+    }
+  }
 
   void _showSignOutDialog(BuildContext context) {
     showDialog(
@@ -333,13 +378,13 @@ class _SettingsSection extends StatelessWidget {
         ListTile(
           leading: const Icon(SolarIconsOutline.bell),
           title: const Text('Notifications'),
-          trailing: Switch(value: true, onChanged: (v) {}),
+          trailing: Switch(value: _notificationsEnabled, onChanged: _toggleNotifications),
         ),
         ListTile(
           leading: const Icon(SolarIconsOutline.palette),
           title: const Text('App Theme'),
           trailing: const Icon(SolarIconsOutline.altArrowRight),
-          onTap: () {},
+          onTap: () => context.push('/settings'),
         ),
         ListTile(
           leading: const Icon(SolarIconsOutline.settings),
@@ -348,7 +393,12 @@ class _SettingsSection extends StatelessWidget {
           trailing: const Icon(SolarIconsOutline.altArrowRight),
           onTap: () => _showAccountSettingsSheet(context),
         ),
-        ListTile(leading: const Icon(SolarIconsOutline.questionCircle), title: const Text('Help & Support'), onTap: () {}),
+        ListTile(
+          leading: const Icon(SolarIconsOutline.questionCircle),
+          title: const Text('Help & Support'),
+          trailing: const Icon(SolarIconsOutline.altArrowRight),
+          onTap: () => _contactSupport(context),
+        ),
         const Divider(height: 32, thickness: 1),
         ListTile(
           leading: const Icon(SolarIconsOutline.logout, color: AppColors.primaryPink),

@@ -6,19 +6,26 @@ import '../../../../core/theme/app_colors.dart';
 import '../../cubit/habits_cubit.dart';
 
 class AddHabitScreen extends StatefulWidget {
-  const AddHabitScreen({super.key});
+  /// When provided, the screen edits this habit in place instead of
+  /// creating a new one (preserving its streak/XP/completion history).
+  final Habit? existingHabit;
+
+  const AddHabitScreen({super.key, this.existingHabit});
 
   @override
   State<AddHabitScreen> createState() => _AddHabitScreenState();
 }
 
 class _AddHabitScreenState extends State<AddHabitScreen> {
-  final _nameController = TextEditingController();
-  String _selectedEmoji = '🌸';
-  int _selectedCategoryIndex = 1; // wellness
+  late final _nameController = TextEditingController(text: widget.existingHabit?.name ?? '');
+  late String _selectedEmoji = widget.existingHabit?.emoji ?? '🌸';
+  late int _selectedCategoryIndex = widget.existingHabit?.category ?? 1; // wellness
   final int _targetCount = 1;
-  bool _isShared = false;
-  Color _selectedColor = AppColors.pinkLight;
+  late bool _isShared = widget.existingHabit?.isSharedWithPartner ?? false;
+  late Color _selectedColor =
+      widget.existingHabit != null ? Color(widget.existingHabit!.iconBg) : AppColors.pinkLight;
+
+  bool get _isEditing => widget.existingHabit != null;
 
   final List<String> _emojis = ['🌸', '🧘', '💧', '🚶', '📖', '✍️', '🥦', '☕', '🛌', '🧹'];
   final List<Color> _colors = [
@@ -33,9 +40,56 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   final List<String> _categories = ['hydration', 'wellness', 'learning', 'movement', 'rest', 'custom'];
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a habit name.')),
+      );
+      return;
+    }
+
+    if (_isEditing) {
+      final updated = widget.existingHabit!.copyWith(
+        name: name,
+        emoji: _selectedEmoji,
+        category: _selectedCategoryIndex,
+        isSharedWithPartner: _isShared,
+        iconBg: _selectedColor.toARGB32(),
+      );
+      context.read<HabitsCubit>().updateHabit(updated);
+    } else {
+      final habit = Habit(
+        id: const Uuid().v4(),
+        name: name,
+        emoji: _selectedEmoji,
+        category: _selectedCategoryIndex,
+        frequency: 0, // daily
+        customDays: '[]',
+        isSharedWithPartner: _isShared,
+        iconBg: _selectedColor.toARGB32(),
+        createdAt: DateTime.now(),
+        isArchived: false,
+        currentCount: 0,
+        targetCount: _targetCount,
+        streakCount: 0,
+        longestStreak: 0,
+        xpReward: 50,
+      );
+      context.read<HabitsCubit>().addHabit(habit);
+    }
+    Navigator.pop(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Habit')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Habit' : 'Add Habit')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -126,30 +180,9 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                onPressed: () {
-                  if (_nameController.text.isNotEmpty) {
-                    final habit = Habit(
-                      id: const Uuid().v4(),
-                      name: _nameController.text,
-                      emoji: _selectedEmoji,
-                      category: _selectedCategoryIndex,
-                      frequency: 0, // daily
-                      customDays: '[]',
-                      isSharedWithPartner: _isShared,
-                      iconBg: _selectedColor.toARGB32(),
-                      createdAt: DateTime.now(),
-                      isArchived: false,
-                      currentCount: 0,
-                      targetCount: _targetCount,
-                      streakCount: 0,
-                      longestStreak: 0,
-                      xpReward: 50,
-                    );
-                    context.read<HabitsCubit>().addHabit(habit);
-                    Navigator.pop(context);
-                  }
-                },
-                child: const Text('Save Habit', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                onPressed: _save,
+                child: Text(_isEditing ? 'Save Changes' : 'Save Habit',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ],

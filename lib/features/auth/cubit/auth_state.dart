@@ -32,8 +32,9 @@ class AuthRegistrationSuccess extends AuthState {
 
 class AuthError extends AuthState {
   final String message;
-  const AuthError(this.message);
+  final String? unconfirmedEmail;
+  const AuthError(this.message, {this.unconfirmedEmail});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, unconfirmedEmail];
 }

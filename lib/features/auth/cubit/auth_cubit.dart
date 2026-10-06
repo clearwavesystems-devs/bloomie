@@ -16,9 +16,24 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     try {
       if (_authService.isSignedIn) {
-        final user = await _authService.fetchProfile(_authService.currentUser!.id);
-        _profileCubit.loadFromSupabase(user);
-        emit(AuthAuthenticated(user));
+        final userId = _authService.currentUser!.id;
+        try {
+          final user = await _authService.fetchProfile(userId);
+          await _profileCubit.loadFromSupabase(user);
+          emit(AuthAuthenticated(user));
+        } catch (networkError, stack) {
+          // The Supabase session is still valid locally, but the profile
+          // fetch failed (most likely no internet connection). Fall back
+          // to the cached profile instead of forcing the user to log out.
+          debugPrint('AuthCubit.checkSession network error: $networkError');
+          debugPrint('StackTrace: $stack');
+          final cachedUser = await _profileCubit.loadCachedProfile(userId);
+          if (cachedUser != null) {
+            emit(AuthAuthenticated(cachedUser));
+          } else {
+            emit(AuthUnauthenticated());
+          }
+        }
       } else {
         emit(AuthUnauthenticated());
       }
@@ -47,7 +62,11 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (e, stack) {
       debugPrint('AuthCubit.signUp Error: $e');
       debugPrint('StackTrace: $stack');
-      emit(AuthError(_friendlyError(e.toString())));
+      final raw = e.toString();
+      emit(AuthError(
+        _friendlyError(raw),
+        unconfirmedEmail: _isEmailNotConfirmed(raw) ? email : null,
+      ));
     }
   }
 
@@ -60,12 +79,16 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     try {
       final user = await _authService.signIn(email: email, password: password);
-      _profileCubit.loadFromSupabase(user);
+      await _profileCubit.loadFromSupabase(user);
       emit(AuthAuthenticated(user));
     } catch (e, stack) {
       debugPrint('AuthCubit.signIn Error: $e');
       debugPrint('StackTrace: $stack');
-      emit(AuthError(_friendlyError(e.toString())));
+      final raw = e.toString();
+      emit(AuthError(
+        _friendlyError(raw),
+        unconfirmedEmail: _isEmailNotConfirmed(raw) ? email : null,
+      ));
     }
   }
 
@@ -86,6 +109,29 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  // ── Password Recovery ──────────────────────
+
+  /// Sends a password-reset email. Throws on failure so the caller (a
+  /// dialog with its own local loading indicator) can surface the error
+  /// without disturbing the screen-wide [AuthState].
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _authService.sendPasswordResetEmail(email);
+    } catch (e) {
+      throw Exception(_friendlyError(e.toString()));
+    }
+  }
+
+  /// Re-sends the sign-up confirmation email. See [sendPasswordResetEmail]
+  /// for why this doesn't touch the shared [AuthState].
+  Future<void> resendConfirmationEmail(String email) async {
+    try {
+      await _authService.resendConfirmationEmail(email);
+    } catch (e) {
+      throw Exception(_friendlyError(e.toString()));
+    }
+  }
+
   // ── Helpers ────────────────────────────────
 
   String _friendlyError(String raw) {
@@ -94,11 +140,14 @@ class AuthCubit extends Cubit<AuthState> {
     if (raw.contains('weak_password')) return 'Password must be at least 6 characters.';
     if (raw.contains('network')) return 'No internet connection.';
     if (raw.contains('email_not_confirmed') || raw.contains('not confirmed')) {
-      return 'This account was created before email confirmations were turned off. Please register with a new email address!';
+      return 'Please confirm your email before signing in.';
     }
     if (raw.contains('rate limit') || raw.contains('rate_limit')) {
-      return 'Email limit reached. Please turn OFF "Confirm email" in your Supabase Dashboard under Auth -> Providers -> Email to test instantly.';
+      return 'Too many attempts. Please wait a few minutes and try again.';
     }
     return 'Something went wrong. Please try again.';
   }
+
+  bool _isEmailNotConfirmed(String raw) =>
+      raw.contains('email_not_confirmed') || raw.contains('not confirmed');
 }

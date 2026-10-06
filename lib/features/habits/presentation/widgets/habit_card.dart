@@ -2,15 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/database/app_database.dart';
 import 'package:solar_icons/solar_icons.dart';
 
 class HabitCard extends StatelessWidget {
   final Habit habit;
   final VoidCallback onToggle;
+  final VoidCallback? onArchive;
   final String? partnerNote;
 
-  const HabitCard({super.key, required this.habit, required this.onToggle, this.partnerNote});
+  const HabitCard({
+    super.key,
+    required this.habit,
+    required this.onToggle,
+    this.onArchive,
+    this.partnerNote,
+  });
 
   String _getCategoryName(int index) {
     switch (index) {
@@ -29,12 +37,70 @@ class HabitCard extends StatelessWidget {
     }
   }
 
+  void _showOptionsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(SolarIconsOutline.pen),
+              title: const Text('Edit Habit'),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                context.push('/add-habit', extra: habit);
+              },
+            ),
+            ListTile(
+              leading: const Icon(SolarIconsOutline.trashBinTrash, color: Colors.redAccent),
+              title: const Text('Archive Habit', style: TextStyle(color: Colors.redAccent)),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _confirmArchive(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmArchive(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Archive this habit?'),
+        content: Text(
+          'This hides "${habit.name}" from your list. Its streak history is kept.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              onArchive?.call();
+            },
+            child: const Text('Archive', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDone = habit.currentCount >= habit.targetCount;
 
     return GestureDetector(
       onTap: onToggle,
+      onLongPress: () => _showOptionsSheet(context),
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
         padding: EdgeInsets.all(16.w),

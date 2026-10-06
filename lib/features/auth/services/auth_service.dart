@@ -73,6 +73,19 @@ class AuthService {
     await _client.auth.signOut();
   }
 
+  // ── Password Recovery ──────────────────────
+
+  /// Sends a password-reset email via Supabase Auth.
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _client.auth.resetPasswordForEmail(email);
+  }
+
+  /// Re-sends the sign-up confirmation email for accounts that haven't
+  /// verified their address yet.
+  Future<void> resendConfirmationEmail(String email) async {
+    await _client.auth.resend(type: OtpType.signup, email: email);
+  }
+
   /// Deletes all user profile data from public tables and signs them out.
   Future<void> deleteAccount() async {
     final user = currentUser;

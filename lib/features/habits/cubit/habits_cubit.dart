@@ -10,6 +10,12 @@ class HabitsCubit extends Cubit<HabitsState> {
   final HabitService _habitService;
   final ProfileCubit _profileCubit;
 
+  /// Habit IDs with an in-flight [toggleHabitComplete] call. Guards against
+  /// double-tap/rapid-tap races: since no new state is emitted until all
+  /// the async DB writes + XP award finish, a second tap before that would
+  /// otherwise see the same stale "not yet done" state and award XP twice.
+  final Set<String> _pendingToggles = {};
+
   HabitsCubit(this._habitService, this._profileCubit)
       : super(HabitsInitial());
 
@@ -76,6 +82,9 @@ class HabitsCubit extends Cubit<HabitsState> {
 
   Future<void> toggleHabitComplete(String habitId) async {
     if (state is! HabitsLoaded) return;
+    if (!_pendingToggles.add(habitId)) {
+      return; // Already processing a tap for this habit — ignore the duplicate.
+    }
     final currentState = state as HabitsLoaded;
 
     try {
@@ -129,6 +138,8 @@ class HabitsCubit extends Cubit<HabitsState> {
       await loadHabits();
     } catch (e) {
       emit(HabitsError(e.toString()));
+    } finally {
+      _pendingToggles.remove(habitId);
     }
   }
 
@@ -180,5 +191,37 @@ class HabitsCubit extends Cubit<HabitsState> {
     if (state is! HabitsLoaded) return false;
     final logs = (state as HabitsLoaded).habitLogs[habitId] ?? [];
     return logs.any(StreakCalculator.isToday);
+  }
+
+  /// Overall "perfect day" streak: consecutive calendar days (ending today
+  /// or yesterday, same leniency rule as per-habit streaks) on which
+  /// *every* active habit was completed. This is computed on the fly from
+  /// existing habit logs — it supersedes the legacy `UserModel.streakDays`
+  /// field, which was never actually updated anywhere and always read 0.
+  int get overallStreak {
+    if (state is! HabitsLoaded) return 0;
+    final loaded = state as HabitsLoaded;
+    if (loaded.habits.isEmpty) return 0;
+
+    final perHabitDayKeys = loaded.habits.map((h) {
+      final dates = loaded.habitLogs[h.id] ?? <DateTime>[];
+      return dates.map((d) => '${d.year}-${d.month}-${d.day}').toSet();
+    }).toList();
+
+    // Any habit with zero completions ever means there's no "perfect day" yet.
+    if (perHabitDayKeys.any((s) => s.isEmpty)) return 0;
+
+    var commonDays = perHabitDayKeys.first;
+    for (final s in perHabitDayKeys.skip(1)) {
+      commonDays = commonDays.intersection(s);
+    }
+    if (commonDays.isEmpty) return 0;
+
+    final perfectDays = commonDays.map((key) {
+      final parts = key.split('-').map(int.parse).toList();
+      return DateTime(parts[0], parts[1], parts[2]);
+    }).toList();
+
+    return StreakCalculator.calculate(perfectDays).current;
   }
 }

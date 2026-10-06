@@ -1,6 +1,7 @@
 import 'package:bloomie/app/presentation/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:bloomie/core/database/app_database.dart';
 import 'package:bloomie/features/splash/presentation/screens/splash_screen.dart';
 import 'package:bloomie/features/habits/presentation/screens/habit_screen.dart';
 import 'package:bloomie/features/settings/presentation/screens/settings_screen.dart';
@@ -93,7 +94,8 @@ class AppRouter {
       GoRoute(
         path: '/add-habit',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const AddHabitScreen(),
+        builder: (context, state) =>
+            AddHabitScreen(existingHabit: state.extra as Habit?),
       ),
       GoRoute(
         path: '/journal',

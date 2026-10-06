@@ -77,6 +77,15 @@ class BloomieApp extends StatelessWidget {
   final ShopService shopService;
   late final DataSyncService dataSyncService;
 
+  // Auth/profile services are constructed once here (not inside `build`)
+  // because `ScreenUtilInit`'s builder can re-run independently of this
+  // widget's own `build` (e.g. on device rotation or window-metric
+  // changes). Creating them inside that closure would silently spawn new,
+  // never-disposed instances and reset the user's auth/profile state.
+  late final AuthService authService;
+  late final ProfileCubit profileCubit;
+  late final AuthCubit authCubit;
+
   BloomieApp({
     super.key,
     required this.database,
@@ -93,6 +102,14 @@ class BloomieApp extends StatelessWidget {
       taskService: taskService,
       journalService: journalService,
     );
+    // ProfileCubit must be created first so it can be injected into
+    // HabitsCubit and GardenCubit (single source of XP truth).
+    authService = AuthService();
+    profileCubit = ProfileCubit(authService);
+    authCubit = AuthCubit(authService, profileCubit);
+    // Session restoration is deliberately triggered once from
+    // SplashScreen (after its branding delay), not here — see
+    // splash_screen.dart.
   }
 
   @override
@@ -102,13 +119,6 @@ class BloomieApp extends StatelessWidget {
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
-        // ProfileCubit must be created first so it can be injected into
-        // HabitsCubit and GardenCubit (single source of XP truth).
-        final authService = AuthService();
-        final profileCubit = ProfileCubit(authService);
-        final authCubit = AuthCubit(authService, profileCubit);
-        authCubit.checkSession(); // Restore session on startup
-
         return MultiRepositoryProvider(
           providers: [
             RepositoryProvider.value(value: database),

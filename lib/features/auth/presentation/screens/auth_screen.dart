@@ -21,15 +21,21 @@ class _AuthScreenState extends State<AuthScreen>
 
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _confirmPasswordCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  static final RegExp _emailRegex =
+      RegExp(r'^[\w.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$');
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     _nameCtrl.dispose();
     super.dispose();
   }
@@ -59,6 +65,7 @@ class _AuthScreenState extends State<AuthScreen>
             });
             _emailCtrl.text = state.email;
             _passwordCtrl.clear();
+            _confirmPasswordCtrl.clear();
           }
           if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -66,6 +73,15 @@ class _AuthScreenState extends State<AuthScreen>
                 content: Text(state.message,
                     style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.redAccent,
+                duration: const Duration(seconds: 5),
+                action: state.unconfirmedEmail != null
+                    ? SnackBarAction(
+                        label: 'Resend',
+                        textColor: Colors.white,
+                        onPressed: () => _resendConfirmation(
+                            context, state.unconfirmedEmail!),
+                      )
+                    : null,
               ),
             );
           }
@@ -158,8 +174,9 @@ class _AuthScreenState extends State<AuthScreen>
                       hint: 'hello@bloomie.app',
                       icon: SolarIconsOutline.letter,
                       keyboardType: TextInputType.emailAddress,
-                      validator: (v) =>
-                          (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+                      validator: (v) => (v == null || !_emailRegex.hasMatch(v.trim()))
+                          ? 'Enter a valid email'
+                          : null,
                     ),
                     SizedBox(height: 16.h),
 
@@ -182,6 +199,48 @@ class _AuthScreenState extends State<AuthScreen>
                       validator: (v) =>
                           (v == null || v.length < 6) ? 'Min. 6 characters' : null,
                     ),
+
+                    if (!_isSignIn) ...[
+                      SizedBox(height: 16.h),
+                      _BloomieField(
+                        controller: _confirmPasswordCtrl,
+                        label: 'Confirm Password',
+                        hint: '••••••••',
+                        icon: SolarIconsOutline.lock,
+                        obscureText: _obscureConfirmPassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? SolarIconsOutline.eyeClosed
+                                : SolarIconsOutline.eye,
+                            color: AppColors.textMuted,
+                          ),
+                          onPressed: () => setState(
+                              () => _obscureConfirmPassword = !_obscureConfirmPassword),
+                        ),
+                        validator: (v) => (v != _passwordCtrl.text)
+                            ? 'Passwords do not match'
+                            : null,
+                      ),
+                    ],
+
+                    if (_isSignIn) ...[
+                      SizedBox(height: 8.h),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () => _showForgotPasswordDialog(context),
+                          child: Text(
+                            'Forgot password?',
+                            style: GoogleFonts.nunito(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryPink,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
 
                     SizedBox(height: 32.h),
 
@@ -283,6 +342,129 @@ class _AuthScreenState extends State<AuthScreen>
         displayName: _nameCtrl.text.trim(),
       );
     }
+  }
+
+  Future<void> _resendConfirmation(BuildContext context, String email) async {
+    final cubit = context.read<AuthCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await cubit.resendConfirmationEmail(email);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Confirmation email resent! 📬',
+              style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
+          backgroundColor: AppColors.lavender,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', ''),
+              style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final cubit = context.read<AuthCubit>();
+    final resetEmailCtrl = TextEditingController(text: _emailCtrl.text.trim());
+    final resetFormKey = GlobalKey<FormState>();
+    bool isSending = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+          title: Text(
+            'Reset Password 🔑',
+            style: GoogleFonts.baloo2(fontWeight: FontWeight.bold, color: AppColors.primaryPink),
+          ),
+          content: Form(
+            key: resetFormKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Enter your email and we'll send you a link to reset your password.",
+                  style: GoogleFonts.nunito(color: AppColors.textMuted),
+                ),
+                SizedBox(height: 16.h),
+                TextFormField(
+                  controller: resetEmailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  style: GoogleFonts.nunito(fontSize: 14.sp),
+                  validator: (v) => (v == null || !_emailRegex.hasMatch(v.trim()))
+                      ? 'Enter a valid email'
+                      : null,
+                  decoration: InputDecoration(
+                    hintText: 'hello@bloomie.app',
+                    filled: true,
+                    fillColor: const Color(0xFFF5E6F0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSending ? null : () => Navigator.pop(dialogCtx),
+              child: Text('Cancel',
+                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: AppColors.textMuted)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryPink,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              ),
+              onPressed: isSending
+                  ? null
+                  : () async {
+                      if (!resetFormKey.currentState!.validate()) return;
+                      setDialogState(() => isSending = true);
+                      final messenger = ScaffoldMessenger.of(context);
+                      try {
+                        await cubit.sendPasswordResetEmail(resetEmailCtrl.text.trim());
+                        if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Password reset link sent! Check your inbox. 📧',
+                                style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
+                            backgroundColor: AppColors.lavender,
+                          ),
+                        );
+                      } catch (e) {
+                        setDialogState(() => isSending = false);
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString().replaceFirst('Exception: ', ''),
+                                style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    },
+              child: isSending
+                  ? SizedBox(
+                      width: 18.w,
+                      height: 18.w,
+                      child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : Text('Send Link',
+                      style: GoogleFonts.nunito(fontWeight: FontWeight.bold, color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
