@@ -156,73 +156,92 @@ class _AuthScreenState extends State<AuthScreen>
 
                     // ── Fields ──────────────────────────
 
-                    if (!_isSignIn) ...[
-                      _BloomieField(
-                        controller: _nameCtrl,
-                        label: 'Display Name',
-                        hint: 'e.g. Sakura',
-                        icon: SolarIconsOutline.user,
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
-                      ),
-                      SizedBox(height: 16.h),
-                    ],
+                    AutofillGroup(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (!_isSignIn) ...[
+                            _BloomieField(
+                              controller: _nameCtrl,
+                              label: 'Display Name',
+                              hint: 'e.g. Sakura',
+                              icon: SolarIconsOutline.user,
+                              autofillHints: const [AutofillHints.name],
+                              textInputAction: TextInputAction.next,
+                              validator: (v) =>
+                                  (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
+                            ),
+                            SizedBox(height: 16.h),
+                          ],
 
-                    _BloomieField(
-                      controller: _emailCtrl,
-                      label: 'Email',
-                      hint: 'hello@bloomie.app',
-                      icon: SolarIconsOutline.letter,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (v) => (v == null || !_emailRegex.hasMatch(v.trim()))
-                          ? 'Enter a valid email'
-                          : null,
-                    ),
-                    SizedBox(height: 16.h),
-
-                    _BloomieField(
-                      controller: _passwordCtrl,
-                      label: 'Password',
-                      hint: '••••••••',
-                      icon: SolarIconsOutline.lock,
-                      obscureText: _obscurePassword,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? SolarIconsOutline.eyeClosed
-                              : SolarIconsOutline.eye,
-                          color: AppColors.textMuted,
-                        ),
-                        onPressed: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                      validator: (v) =>
-                          (v == null || v.length < 6) ? 'Min. 6 characters' : null,
-                    ),
-
-                    if (!_isSignIn) ...[
-                      SizedBox(height: 16.h),
-                      _BloomieField(
-                        controller: _confirmPasswordCtrl,
-                        label: 'Confirm Password',
-                        hint: '••••••••',
-                        icon: SolarIconsOutline.lock,
-                        obscureText: _obscureConfirmPassword,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmPassword
-                                ? SolarIconsOutline.eyeClosed
-                                : SolarIconsOutline.eye,
-                            color: AppColors.textMuted,
+                          _BloomieField(
+                            controller: _emailCtrl,
+                            label: 'Email',
+                            hint: 'hello@bloomie.app',
+                            icon: SolarIconsOutline.letter,
+                            keyboardType: TextInputType.emailAddress,
+                            autofillHints: const [AutofillHints.email],
+                            textInputAction: TextInputAction.next,
+                            validator: (v) => (v == null || !_emailRegex.hasMatch(v.trim()))
+                                ? 'Enter a valid email'
+                                : null,
                           ),
-                          onPressed: () => setState(
-                              () => _obscureConfirmPassword = !_obscureConfirmPassword),
-                        ),
-                        validator: (v) => (v != _passwordCtrl.text)
-                            ? 'Passwords do not match'
-                            : null,
+                          SizedBox(height: 16.h),
+
+                          _BloomieField(
+                            controller: _passwordCtrl,
+                            label: 'Password',
+                            hint: '••••••••',
+                            icon: SolarIconsOutline.lock,
+                            obscureText: _obscurePassword,
+                            autofillHints: _isSignIn
+                                ? const [AutofillHints.password]
+                                : const [AutofillHints.newPassword],
+                            textInputAction: _isSignIn ? TextInputAction.done : TextInputAction.next,
+                            onFieldSubmitted: _isSignIn ? (_) => _submit() : null,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? SolarIconsOutline.eyeClosed
+                                    : SolarIconsOutline.eye,
+                                color: AppColors.textMuted,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _obscurePassword = !_obscurePassword),
+                            ),
+                            validator: (v) =>
+                                (v == null || v.length < 6) ? 'Min. 6 characters' : null,
+                          ),
+
+                          if (!_isSignIn) ...[
+                            SizedBox(height: 16.h),
+                            _BloomieField(
+                              controller: _confirmPasswordCtrl,
+                              label: 'Confirm Password',
+                              hint: '••••••••',
+                              icon: SolarIconsOutline.lock,
+                              obscureText: _obscureConfirmPassword,
+                              autofillHints: const [AutofillHints.newPassword],
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) => _submit(),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureConfirmPassword
+                                      ? SolarIconsOutline.eyeClosed
+                                      : SolarIconsOutline.eye,
+                                  color: AppColors.textMuted,
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscureConfirmPassword = !_obscureConfirmPassword),
+                              ),
+                              validator: (v) => (v != _passwordCtrl.text)
+                                  ? 'Passwords do not match'
+                                  : null,
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
+                    ),
 
                     if (_isSignIn) ...[
                       SizedBox(height: 8.h),
@@ -287,7 +306,39 @@ class _AuthScreenState extends State<AuthScreen>
                       ),
                     ),
 
-                    SizedBox(height: 24.h),
+                    SizedBox(height: 12.h),
+
+                    // ── Continue as Guest Option ──────────────────────
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48.h,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: AppColors.primaryPink.withValues(alpha: 0.35),
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          backgroundColor: Colors.white,
+                        ),
+                        onPressed: isLoading
+                            ? null
+                            : () => context.read<AuthCubit>().continueAsGuest(),
+                        icon: const Text('🌱', style: TextStyle(fontSize: 18)),
+                        label: Text(
+                          'Continue as Guest',
+                          style: GoogleFonts.nunito(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryPink,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 20.h),
 
                     // ── Switch mode hint ────────────────
                     Center(
@@ -315,7 +366,7 @@ class _AuthScreenState extends State<AuthScreen>
                       ),
                     ),
 
-                    SizedBox(height: 40.h),
+                    SizedBox(height: 36.h),
                   ],
                 ),
               ),
@@ -479,6 +530,9 @@ class _BloomieField extends StatelessWidget {
   final Widget? suffixIcon;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
+  final Iterable<String>? autofillHints;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onFieldSubmitted;
 
   const _BloomieField({
     required this.controller,
@@ -489,6 +543,9 @@ class _BloomieField extends StatelessWidget {
     this.suffixIcon,
     this.keyboardType = TextInputType.text,
     this.validator,
+    this.autofillHints,
+    this.textInputAction,
+    this.onFieldSubmitted,
   });
 
   @override
@@ -510,6 +567,9 @@ class _BloomieField extends StatelessWidget {
           obscureText: obscureText,
           keyboardType: keyboardType,
           validator: validator,
+          autofillHints: autofillHints,
+          textInputAction: textInputAction,
+          onFieldSubmitted: onFieldSubmitted,
           style: GoogleFonts.nunito(fontSize: 14.sp),
           decoration: InputDecoration(
             hintText: hint,

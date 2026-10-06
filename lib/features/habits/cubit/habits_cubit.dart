@@ -151,11 +151,20 @@ class HabitsCubit extends Cubit<HabitsState> {
     return logs.any(StreakCalculator.isToday);
   }
 
-  // ── Archive ────────────────────────────────
+  // ── Archive & Delete ───────────────────────
 
   Future<void> archiveHabit(String habitId) async {
     try {
       await _habitService.archiveHabit(habitId);
+      await loadHabits();
+    } catch (e) {
+      emit(HabitsError(e.toString()));
+    }
+  }
+
+  Future<void> deleteHabit(String habitId) async {
+    try {
+      await _habitService.deleteHabit(habitId);
       await loadHabits();
     } catch (e) {
       emit(HabitsError(e.toString()));

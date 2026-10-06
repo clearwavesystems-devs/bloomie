@@ -104,7 +104,8 @@ class TaskCubit extends Cubit<TaskState> {
 
       await _taskService.updateTask(updated);
 
-      // Award rewards through ProfileCubit
+      // Award rewards through ProfileCubit (XP + Blooms)
+      await _profileCubit.addXP(task.xpReward, isFocusTask: wasTimerRunning);
       await _profileCubit.addBlooms(task.bloomReward);
 
       // Reload

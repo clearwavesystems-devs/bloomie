@@ -158,6 +158,21 @@ class HabitService {
     }
   }
 
+  // ── Delete Habit (Local + Cloud Sync) ──────────────────────────────
+
+  Future<void> deleteHabit(String habitId) async {
+    await _db.deleteHabit(habitId);
+
+    final userId = _currentUserId;
+    if (userId != null) {
+      try {
+        await _supabase.from('habits').delete().eq('id', habitId);
+      } catch (e) {
+        debugPrint('HabitService: Cloud delete failed, queued for later: $e');
+      }
+    }
+  }
+
   // ── Logs Queries (Local only for speed) ───────────────────────────────
 
   Future<List<HabitLog>> getLogsForHabit(String habitId) =>

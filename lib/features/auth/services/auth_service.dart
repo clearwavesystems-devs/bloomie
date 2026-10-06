@@ -17,6 +17,9 @@ class AuthService {
     required String email,
     required String password,
     required String displayName,
+    int initialXp = 0,
+    int initialLevel = 1,
+    int initialBlooms = 0,
   }) async {
     try {
       debugPrint('AuthService [DEBUG]: Starting signUp for $email');
@@ -31,11 +34,14 @@ class AuthService {
       final user = response.user;
       if (user == null) throw Exception('Sign up failed — no user returned.');
 
-      // Create cloud profile record
+      // Create cloud profile record carrying over any initial guest progress
       final newProfile = UserModel(
         id: user.id,
         name: displayName,
         avatarEmoji: '🌸',
+        xp: initialXp,
+        level: initialLevel,
+        totalBlooms: initialBlooms,
         joinedAt: DateTime.now(),
       );
 

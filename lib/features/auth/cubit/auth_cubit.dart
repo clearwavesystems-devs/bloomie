@@ -1,3 +1,4 @@
+import 'package:bloomie/features/auth/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../services/auth_service.dart';
@@ -44,13 +45,16 @@ class AuthCubit extends Cubit<AuthState> {
       // If the user has a valid local session but we can't reach the server
       // (e.g. no internet on startup), keep them authenticated with cached
       // data rather than booting them to the login screen.
-      final isNetworkError = e.toString().contains('SocketException') ||
+      final isNetworkError =
+          e.toString().contains('SocketException') ||
           e.toString().contains('Failed host lookup') ||
           e.toString().contains('ClientException') ||
           e.toString().contains('AuthRetryableFetchException');
 
       if (isNetworkError && _authService.isSignedIn) {
-        debugPrint('AuthCubit.checkSession: Network error but local session exists — staying authenticated offline.');
+        debugPrint(
+          'AuthCubit.checkSession: Network error but local session exists — staying authenticated offline.',
+        );
         // ProfileCubit starts in ProfileInitial at cold-start, so cachedUser
         // is null. Load from SharedPreferences first, then read it back.
         await _profileCubit.loadProfile();
@@ -68,6 +72,30 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  // ── Continue as Guest ──────────────────────
+
+  Future<void> continueAsGuest() async {
+    emit(AuthLoading());
+    try {
+      await _profileCubit.loadProfile();
+      final cached = _profileCubit.cachedUser;
+      if (cached != null) {
+        emit(AuthAuthenticated(cached));
+      } else {
+        final guest = UserModel(
+          id: 'me',
+          name: 'Bloomie Guest',
+          avatarEmoji: '🌸',
+          joinedAt: DateTime.now(),
+        );
+        await _profileCubit.loadFromSupabase(guest);
+        emit(AuthAuthenticated(guest));
+      }
+    } catch (e) {
+      emit(AuthError('Could not start guest session: ${e.toString()}'));
+    }
+  }
+
   // ── Sign Up ────────────────────────────────
 
   Future<void> signUp({
@@ -76,43 +104,57 @@ class AuthCubit extends Cubit<AuthState> {
     required String displayName,
   }) async {
     emit(AuthLoading());
+    final cleanEmail = email.trim().toLowerCase();
     try {
+      final cached = _profileCubit.cachedUser;
+      final initialXp = cached?.xp ?? 0;
+      final initialLevel = cached?.level ?? 1;
+      final initialBlooms = cached?.totalBlooms ?? 0;
+
       await _authService.signUp(
-        email: email,
+        email: cleanEmail,
         password: password,
-        displayName: displayName,
+        displayName: displayName.trim(),
+        initialXp: initialXp,
+        initialLevel: initialLevel,
+        initialBlooms: initialBlooms,
       );
-      emit(AuthRegistrationSuccess(email));
+      emit(AuthRegistrationSuccess(cleanEmail));
     } catch (e, stack) {
       debugPrint('AuthCubit.signUp Error: $e');
       debugPrint('StackTrace: $stack');
       final raw = e.toString();
-      emit(AuthError(
-        _friendlyError(raw),
-        unconfirmedEmail: _isEmailNotConfirmed(raw) ? email : null,
-      ));
+      emit(
+        AuthError(
+          _friendlyError(raw),
+          unconfirmedEmail: _isEmailNotConfirmed(raw) ? cleanEmail : null,
+        ),
+      );
     }
   }
 
   // ── Sign In ────────────────────────────────
 
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     emit(AuthLoading());
+    final cleanEmail = email.trim().toLowerCase();
     try {
-      final user = await _authService.signIn(email: email, password: password);
+      final user = await _authService.signIn(
+        email: cleanEmail,
+        password: password,
+      );
       await _profileCubit.loadFromSupabase(user);
       emit(AuthAuthenticated(user));
     } catch (e, stack) {
       debugPrint('AuthCubit.signIn Error: $e');
       debugPrint('StackTrace: $stack');
       final raw = e.toString();
-      emit(AuthError(
-        _friendlyError(raw),
-        unconfirmedEmail: _isEmailNotConfirmed(raw) ? email : null,
-      ));
+      emit(
+        AuthError(
+          _friendlyError(raw),
+          unconfirmedEmail: _isEmailNotConfirmed(raw) ? cleanEmail : null,
+        ),
+      );
     }
   }
 
@@ -160,8 +202,12 @@ class AuthCubit extends Cubit<AuthState> {
 
   String _friendlyError(String raw) {
     if (raw.contains('Invalid login')) return 'Incorrect email or password.';
-    if (raw.contains('already registered')) return 'An account with this email already exists.';
-    if (raw.contains('weak_password')) return 'Password must be at least 6 characters.';
+    if (raw.contains('already registered')) {
+      return 'An account with this email already exists.';
+    }
+    if (raw.contains('weak_password')) {
+      return 'Password must be at least 6 characters.';
+    }
     if (raw.contains('network')) return 'No internet connection.';
     if (raw.contains('email_not_confirmed') || raw.contains('not confirmed')) {
       return 'Please confirm your email before signing in.';

@@ -10,6 +10,7 @@ class HabitCard extends StatelessWidget {
   final Habit habit;
   final VoidCallback onToggle;
   final VoidCallback? onArchive;
+  final VoidCallback? onDelete;
   final String? partnerNote;
 
   const HabitCard({
@@ -17,6 +18,7 @@ class HabitCard extends StatelessWidget {
     required this.habit,
     required this.onToggle,
     this.onArchive,
+    this.onDelete,
     this.partnerNote,
   });
 
@@ -56,11 +58,19 @@ class HabitCard extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(SolarIconsOutline.trashBinTrash, color: Colors.redAccent),
-              title: const Text('Archive Habit', style: TextStyle(color: Colors.redAccent)),
+              leading: const Icon(SolarIconsOutline.archive, color: Colors.orangeAccent),
+              title: const Text('Archive Habit', style: TextStyle(color: Colors.orangeAccent)),
               onTap: () {
                 Navigator.pop(sheetCtx);
                 _confirmArchive(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(SolarIconsOutline.trashBinTrash, color: Colors.redAccent),
+              title: const Text('Delete Habit Permanently', style: TextStyle(color: Colors.redAccent)),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _confirmDelete(context);
               },
             ),
           ],
@@ -75,7 +85,7 @@ class HabitCard extends StatelessWidget {
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Archive this habit?'),
         content: Text(
-          'This hides "${habit.name}" from your list. Its streak history is kept.',
+          'This hides "${habit.name}" from your active list. Its streak history is kept.',
         ),
         actions: [
           TextButton(
@@ -87,7 +97,32 @@ class HabitCard extends StatelessWidget {
               Navigator.pop(dialogCtx);
               onArchive?.call();
             },
-            child: const Text('Archive', style: TextStyle(color: Colors.redAccent)),
+            child: const Text('Archive', style: TextStyle(color: Colors.orangeAccent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Delete this habit permanently?'),
+        content: Text(
+          'This permanently removes "${habit.name}" and all of its completed history. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              onDelete?.call();
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

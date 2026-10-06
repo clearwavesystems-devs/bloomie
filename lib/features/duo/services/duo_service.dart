@@ -202,6 +202,43 @@ class DuoService {
     return session;
   }
 
+  /// Leaves or deactivates the active Duo session.
+  Future<void> leaveSession() async {
+    final userId = _currentUserId;
+    final session = await getActiveSession();
+
+    if (userId != null && session != null) {
+      try {
+        await _supabase
+            .from('duo_sessions')
+            .update({'is_active': false})
+            .eq('id', session.id);
+
+        await _supabase
+            .from('profiles')
+            .update({'duo_partner_id': null})
+            .eq('id', userId);
+
+        if (session.userAId.isNotEmpty && session.userAId != userId) {
+          await _supabase
+              .from('profiles')
+              .update({'duo_partner_id': null})
+              .eq('id', session.userAId);
+        }
+        if (session.userBId != null && session.userBId != userId) {
+          await _supabase
+              .from('profiles')
+              .update({'duo_partner_id': null})
+              .eq('id', session.userBId!);
+        }
+      } catch (e) {
+        debugPrint('DuoService.leaveSession warning: $e');
+      }
+    }
+
+    await _db.customStatement('UPDATE duo_sessions SET is_active = 0');
+  }
+
   // ── Partner Operations ──────────────────────
 
   /// Retrieves the partner's status. If online, gets real Supabase profile.

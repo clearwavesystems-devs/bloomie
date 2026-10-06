@@ -67,6 +67,16 @@ class DuoCubit extends Cubit<DuoState> {
     }
   }
 
+  Future<void> leaveDuoSession() async {
+    emit(DuoLoading());
+    try {
+      await _duoService.leaveSession();
+      await loadDuoData();
+    } catch (e) {
+      emit(DuoError(e.toString()));
+    }
+  }
+
   Future<void> sendPetal() async {
     final state = this.state;
     if (state is DuoLoaded && state.partner != null) {

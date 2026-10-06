@@ -25,10 +25,29 @@ class _DuoScreenState extends State<DuoScreen> {
     context.read<DuoCubit>().loadDuoData();
   }
 
-  @override
-  void dispose() {
-    _codeController.dispose();
-    super.dispose();
+  void _confirmLeaveDuo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Leave Duo Session?'),
+        content: const Text(
+          'This will unpair your garden connection and end the active session.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              context.read<DuoCubit>().leaveDuoSession();
+            },
+            child: const Text('Leave Session', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -47,6 +66,26 @@ class _DuoScreenState extends State<DuoScreen> {
           IconButton(
             icon: Icon(SolarIconsOutline.restart, color: AppColors.textDark, size: 24.sp),
             onPressed: () => context.read<DuoCubit>().loadDuoData(),
+          ),
+          PopupMenuButton<String>(
+            icon: Icon(SolarIconsOutline.menuDots, color: AppColors.textDark, size: 22.sp),
+            onSelected: (val) {
+              if (val == 'leave') {
+                _confirmLeaveDuo(context);
+              }
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'leave',
+                child: Row(
+                  children: [
+                    Icon(SolarIconsOutline.logout, color: Colors.redAccent, size: 18),
+                    SizedBox(width: 8),
+                    Text('Leave Duo Session', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

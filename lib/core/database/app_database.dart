@@ -232,6 +232,11 @@ class AppDatabase extends _$AppDatabase {
         const HabitsCompanion(isArchived: Value(true)),
       );
 
+  Future deleteHabit(String id) async {
+    await (delete(habitLogs)..where((t) => t.habitId.equals(id))).go();
+    return (delete(habits)..where((t) => t.id.equals(id))).go();
+  }
+
   // ── HabitLog Queries ───────────────────────
 
   Future<int> insertLog(HabitLog log) => into(habitLogs).insert(log);

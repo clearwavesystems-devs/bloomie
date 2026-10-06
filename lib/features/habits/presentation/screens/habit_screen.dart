@@ -602,6 +602,8 @@ class _HabitList extends StatelessWidget {
                     context.read<HabitsCubit>().toggleHabitComplete(habit.id),
                 onArchive: () =>
                     context.read<HabitsCubit>().archiveHabit(habit.id),
+                onDelete: () =>
+                    context.read<HabitsCubit>().deleteHabit(habit.id),
                 partnerNote: habit.isSharedWithPartner
                     ? 'Mira also did this!'
                     : null,
